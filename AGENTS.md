@@ -35,7 +35,8 @@ game/GameEngine.kt      纯逻辑：物理、碰撞、体温、计分、障碍�
 content/GameArt.kt      插画层：素材加载 + Canvas 绘制 + WinterPalette + 体温染色
 content/Hud.kt          体温胶囊 + 得分胶囊
 content/Cards.kt        开始卡 / 结算卡（含 Scrim）
-content/HomePage.kt     Box 堆叠 + 帧循环 + 点击输入
+content/GameAudio.kt    音效：短音走 SoundPool，循环环境音走 MediaPlayer
+content/HomePage.kt     Box 堆叠 + 帧循环 + 点击输入 + 音效边沿检测
 Main.kt                 DefaultWindowContainer { PicoTheme { HomePage() } }
 ```
 
@@ -74,6 +75,26 @@ Main.kt                 DefaultWindowContainer { PicoTheme { HomePage() } }
 ### 覆盖层必须自己消费指针事件
 
 开始卡和结算卡盖在带 `detectTapGestures` 的游戏画布上。`Modifier.background` 不挂 pointer-input node，射线落在卡片**之外**的遮罩区域会穿透到画布触发扇翅。`Cards.kt` 的 `Scrim` 里那段 `awaitPointerEvent().changes.forEach { it.consume() }` 就是干这个的，**不是死代码，别删**。
+
+### 音效
+
+- 素材在 `app/src/main/assets/audio/`，**必须保持未压缩**：`build.gradle.kts` 里的
+  `androidResources { noCompress += listOf("wav","mp3") }`。压缩了 `assets.openFd()` 就拿不到
+  可用的 `AssetFileDescriptor`，运行时抛异常。改动后用
+  `unzip -lv <apk> | grep assets/audio` 确认是 `Stored / 0%`
+- `flap.wav` 是从用户给的 `飞翔.mp3` 里**切出的单次振翅**（原文件是三次连续振翅共 2.4s，
+  整段播放会听到三下、连点还会糊成一片）。换素材时记得也只取单次
+- 引擎只暴露 `flapEvents` / `pickupEvents` 两个**纯计数器**，表现层比对上一帧判边沿——
+  这样引擎依旧不含 Android 类型，JUnit 照跑
+- 音效**截图判不出来**。验证靠 `adb shell dumpsys audio` 看有没有本应用的活跃播放器，
+  外加 logcat 无 SoundPool / MediaPlayer 异常
+
+### 三维启动图标别让工具重新编码
+
+`res/drawable/icon_3d_*.png` 与 `mipmap-xxxhdpi/ic_spatial_launcher.png` 曾被某个工具
+（疑似 Android Studio 同步）原地重新编码：**尺寸、位深、色彩类型全都没变，体积却从 848KB
+涨到 5MB**。纯膨胀无收益。发现 `git status` 里这几个文件无故变更时，直接
+`git checkout HEAD -- <路径>` 还原；构建本身不会改写它们。
 
 ### 设备是多会话共享的
 
@@ -117,7 +138,7 @@ adb -s emulator-5554 shell am start -S \
 ## 下一步
 
 1. **真机扫一遍射线**：确认「开始飞行」按钮点得到、覆盖层不穿透。这是目前唯一一类还没有任何证据的问题——静态截图和单测都判不出来
-2. 音效：扇翅 / 吃到浆果 / 吃到花朵 / 撞击（契约 §6 只允许这四个）
+2. **补撞枝音效**：撞枝 −25° 目前完全无声，是本作最重要的负反馈却没有听觉提示（契约 §5b 已记为已知缺口）
 3. 最高分持久化（目前只在内存里）
 4. 素材到位后按 `asset-manifest.md` 替换，并跑 `.spatialsdk/tools/validate-assets.py`
 5. V2：花朵无敌态

@@ -81,6 +81,10 @@ class GameEngine {
     var birdY = 290f; private set
     var birdVy = 0f; private set
     var scroll = 0f; private set
+    /** 音效用的纯计数器：只增不减，表现层比对上一帧的值来判边沿。引擎不认识音频。 */
+    var flapEvents = 0; private set
+    var pickupEvents = 0; private set
+
     var hurt = 0f; private set          // 撞击硬直剩余秒数，>0 时闪烁且不再扣血
     /** 仅供 DEBUG 截图验证：冻结物理但保留动画时钟 */
     var frozen = false; private set
@@ -106,6 +110,7 @@ class GameEngine {
         temp = TEMP_MAX; score = 0; berries = 0; blooms = 0
         elapsed = 0f; branchesPassed = 0
         birdY = 290f; birdVy = 0f; scroll = 0f; hurt = 0f
+        flapEvents = 0; pickupEvents = 0
         lastRunWasRecord = false; frozen = false      // 否则 DEBUG 启动后按「再飞一次」会一直卡在冻结态
         obstacles.clear(); nextIndex = 0; lastGc = 268f
         // 预铺满一屏，NotStarted 时背后就有景可看
@@ -121,8 +126,8 @@ class GameEngine {
     /** 点击窗口任意处 = 扇翅一次。未开始时点击即开局。 */
     fun flap() {
         when (phase) {
-            Phase.NotStarted -> { start(); birdVy = FLAP_V }
-            Phase.Playing -> birdVy = FLAP_V
+            Phase.NotStarted -> { start(); birdVy = FLAP_V; flapEvents++ }
+            Phase.Playing -> { birdVy = FLAP_V; flapEvents++ }
             Phase.GameOver -> Unit          // 结算态由按钮驱动，点击不复活
         }
     }
@@ -200,12 +205,12 @@ class GameEngine {
             // 收集物：圆形判定，不参与碰撞
             if (o.hasBerry && !o.berryEaten &&
                 near(bx, birdY, ox, o.berryY, 34f)) {
-                o.berryEaten = true; berries++
+                o.berryEaten = true; berries++; pickupEvents++
                 temp = min(TEMP_MAX, temp + TEMP_BERRY)
             }
             if (o.hasBloom && !o.bloomPicked &&
                 near(bx, birdY, ox, o.bloomY, 30f)) {
-                o.bloomPicked = true; blooms++; score += BLOOM_SCORE
+                o.bloomPicked = true; blooms++; score += BLOOM_SCORE; pickupEvents++
             }
         }
     }
@@ -217,7 +222,7 @@ class GameEngine {
 
     /** 见 debugForce */
     internal fun debugPlace(scrollTo: Float, temperature: Float,
-                            passed: Int, eaten: Int, picked: Int) {
+                            passed: Int, eaten: Int, picked: Int, freeze: Boolean = true) {
         scroll = scrollTo
         cull()
         val o = obstacles.minByOrNull { kotlin.math.abs(it.worldX - scroll - BIRD_X) }
@@ -226,7 +231,7 @@ class GameEngine {
         temp = temperature
         branchesPassed = passed; berries = eaten; blooms = picked
         score = passed + picked * BLOOM_SCORE
-        frozen = true
+        frozen = freeze
     }
 
     internal fun debugEnd(seconds: Float) {

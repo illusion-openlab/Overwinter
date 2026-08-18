@@ -144,6 +144,41 @@ class GameEngineTest {
         assertEquals("best 不应被更低的分数覆盖", 999, e.best)
     }
 
+    @Test fun `flapEvents counts only real flaps`() {
+        val e = GameEngine()
+        assertEquals(0, e.flapEvents)
+        e.flap()                                     // NotStarted 下点击即开局，也算一次扇翅
+        assertEquals(1, e.flapEvents)
+        e.flap(); e.flap()
+        assertEquals(3, e.flapEvents)
+        run(e, 6f)                                   // 摔死
+        assertEquals(Phase.GameOver, e.phase)
+        val before = e.flapEvents
+        e.flap()                                     // 结算态点击不复活，也不该出声
+        assertEquals("结算态不应产生扇翅事件", before, e.flapEvents)
+    }
+
+    @Test fun `eating a berry raises pickupEvents and temperature`() {
+        val e = playing()
+        // 把小鸟直接放到缝隙中线（浆果就在中线 ±18dp，收集半径 34dp），不冻结
+        e.debugPlace(scrollTo = FIRST_X - BIRD_X + SPACING * 2f, temperature = 50f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        val t0 = e.temp
+        val p0 = e.pickupEvents
+        repeat(3) { e.update(1f / 90f) }
+        assertTrue("应吃到浆果", e.pickupEvents > p0)
+        assertTrue("吃到后体温应回升", e.temp > t0)
+    }
+
+    @Test fun `reset clears the audio event counters`() {
+        val e = GameEngine()
+        e.flap(); e.flap()
+        assertTrue(e.flapEvents > 0)
+        e.reset()
+        assertEquals(0, e.flapEvents)
+        assertEquals(0, e.pickupEvents)
+    }
+
     @Test fun `reset clears run state but keeps best`() {
         val e = playing()
         run(e, 6f)

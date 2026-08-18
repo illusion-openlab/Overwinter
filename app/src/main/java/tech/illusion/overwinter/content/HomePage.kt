@@ -27,6 +27,7 @@ import kotlin.math.roundToInt
 fun HomePage() {
     val engine = remember { GameEngine() }
     val art = rememberArt()
+    val audio = rememberGameAudio()
 
     // 截图验证入口（契约 §7）。只认 intent extra，正常启动不受影响。
     //   cold / over —— 首次组合前直接把局面设好并冻结（拍静态构图用）
@@ -58,8 +59,12 @@ fun HomePage() {
     // 主循环用 delay 驱动，不用 withFrameNanos。
     // 实测：在 DefaultWindowContainer 里 withFrameNanos 不会恢复，协程停在第一次挂起，
     // 整个游戏循环一帧都不跑（日志里 autoPlay=true 但循环体从没执行过）。
+    // 音效边沿检测：引擎只给纯计数器，表现层比对上一帧的值决定放不放。
+    // 这样引擎依旧不认识 Android，JUnit 照样能测。
     LaunchedEffect(Unit) {
         var last = System.nanoTime()
+        var lastFlap = engine.flapEvents
+        var lastPickup = engine.pickupEvents
         while (isActive) {
             delay(11L)                                   // ~90Hz 上限，实际由调度决定
             val now = System.nanoTime()
@@ -72,6 +77,11 @@ fun HomePage() {
             }
             engine.update(dt)
             tick++                       // 只订阅绘制阶段，用于刷新 Canvas
+
+            if (engine.flapEvents != lastFlap) { lastFlap = engine.flapEvents; audio.flap() }
+            if (engine.pickupEvents != lastPickup) { lastPickup = engine.pickupEvents; audio.pickup() }
+            if (phase != Phase.GameOver && engine.phase == Phase.GameOver) audio.gameOver()
+
             phase = engine.phase
             tempShown = engine.temp.roundToInt()
             scoreShown = engine.score

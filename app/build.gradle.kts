@@ -18,6 +18,12 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters.add("arm64-v8a") }
     }
+    androidResources {
+        // SoundPool / MediaPlayer 走 assets.openFd()，要求文件在 APK 里未压缩存储。
+        // mp3 在 aapt 默认免压清单里，wav 不在，显式补上。
+        noCompress += listOf("wav", "mp3")
+    }
+
 
     buildTypes {
         release {

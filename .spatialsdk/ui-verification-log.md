@@ -199,3 +199,33 @@ frameClock tick=1           ← withFrameNanos 只触发了 1 次，之后再没
 - 碰撞矩形与视觉轮廓的对齐（需要 `DEBUG` 描边）
 - **真人点击「开始飞行」按钮本身**：`live` 档验证的是按钮回调之后的链路，按钮的射线命中没验（模拟器 adb tap 打不准）
 - **覆盖层指针消费是否真挡住穿透**：只能真机扫射线
+
+---
+
+## 第 7 轮 — 2026-08-18 — 音效上机验证
+
+音效**截图判不出来**，改用系统状态与日志作为判据。
+
+### 证据
+
+```
+AudioPlaybackConfiguration piid:2423 type:android.media.MediaPlayer state:started
+  usage=USAGE_GAME content=CONTENT_TYPE_SONIFICATION sampleRate=48000
+new player piid:2407 package:tech.illusion.overwinter type:android.media.SoundPool
+media.audio_flinger: 8 Tracks of which 2 are active
+```
+
+- ✅ 环境音（MediaPlayer）**state:started**，确实在放
+- ✅ SoundPool 已为本应用创建
+- ✅ logcat 无崩溃、无 SoundPool / MediaPlayer 异常
+- ✅ APK 内 `assets/audio/*` 四个文件均为 `Stored / 0%`（未压缩），`openFd()` 可用
+
+### 不可判定
+
+- **四个音各自听起来对不对、音量平衡如何** —— 只能人耳判断，建议真机试玩
+- 环境音 19s 循环点的接缝是否可闻（mp3 编码器留白导致）
+- 扇翅"掐掉上一声"的连点手感
+
+### 已知缺口
+
+**撞枝没有音效。** 用户给的四个用途里没有撞击音，`坠落.mp3` 对应的是结算态。撞枝 −25° 是本作最重要的负反馈，目前完全无声。
