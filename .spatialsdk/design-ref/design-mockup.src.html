@@ -1,0 +1,943 @@
+<title>越冬</title>
+
+<style>
+/* ============ tokens · dark-first ============ */
+:root{
+  --ground:#0D141C; --surface:#141E29; --surface-2:#1A2632;
+  --line:#25343F; --line-soft:#1B2733;
+  --ink:#E9F1F7; --ink-2:#9CB1C1; --ink-3:#667E8E;
+  --accent:#FFC145; --accent-ink:#2A1E08;
+  --warn:#E4453F; --frost:#8FD0EE;
+  --shadow:0 24px 60px -24px rgba(0,0,0,.75);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --ground:#EDF3F7; --surface:#FFFFFF; --surface-2:#F4F9FC;
+    --line:#D2DFE9; --line-soft:#E4EDF3;
+    --ink:#0F1B25; --ink-2:#4B6272; --ink-3:#7B92A1;
+    --accent:#B37209; --accent-ink:#FFFFFF;
+    --warn:#BE2A25; --frost:#2C7CA5;
+    --shadow:0 20px 44px -22px rgba(20,45,70,.35);
+  }
+}
+:root[data-theme="light"]{
+  --ground:#EDF3F7; --surface:#FFFFFF; --surface-2:#F4F9FC;
+  --line:#D2DFE9; --line-soft:#E4EDF3;
+  --ink:#0F1B25; --ink-2:#4B6272; --ink-3:#7B92A1;
+  --accent:#B37209; --accent-ink:#FFFFFF;
+  --warn:#BE2A25; --frost:#2C7CA5;
+  --shadow:0 20px 44px -22px rgba(20,45,70,.35);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Avenir Next","Avenir","Futura","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+  font-size:16px; line-height:1.72; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin-inline:auto;padding:0 26px}
+
+/* ============ type ============ */
+.eyebrow{
+  font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0;
+}
+h1{font-size:clamp(2.7rem,7vw,4.6rem);line-height:1.02;letter-spacing:.07em;font-weight:700;margin:.18em 0 .04em;text-wrap:balance}
+h2{font-size:clamp(1.28rem,2.4vw,1.6rem);line-height:1.3;letter-spacing:-.005em;font-weight:650;margin:0;text-wrap:balance}
+h3{font-size:1rem;font-weight:650;margin:0 0 .5em;letter-spacing:.01em}
+p{margin:0 0 1em} p:last-child{margin-bottom:0}
+b,strong{font-weight:650}
+code,.mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;font-variant-numeric:tabular-nums}
+
+/* ============ header ============ */
+header{border-bottom:1px solid var(--line);padding:clamp(48px,8vw,88px) 0 clamp(30px,4vw,44px);position:relative;overflow:hidden}
+header::after{content:"";position:absolute;right:-14%;top:-40%;width:60%;height:180%;
+  background:radial-gradient(closest-side,rgba(255,193,69,.09),transparent 72%);pointer-events:none}
+.subname{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;font-size:.72rem;letter-spacing:.44em;color:var(--ink-3);margin:0 0 0 .1em}
+.lede{font-size:clamp(1.02rem,1.7vw,1.18rem);color:var(--ink-2);max-width:56ch;margin-top:1.1em}
+.specstrip{display:grid;gap:1px;background:var(--line);grid-template-columns:repeat(auto-fit,minmax(178px,1fr));
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:clamp(28px,4vw,40px)}
+.specstrip div{background:var(--surface);padding:14px 18px}
+.specstrip dt{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.specstrip dd{margin:2px 0 0;font-size:.95rem;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ============ sections ============ */
+section{padding:clamp(46px,7vw,78px) 0;border-bottom:1px solid var(--line-soft)}
+section:last-of-type{border-bottom:0}
+.shead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.snum{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;font-size:.76rem;color:var(--accent);
+  letter-spacing:.1em;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:5px;padding:1px 7px;flex:none}
+.snote{color:var(--ink-2);font-size:.95rem;max-width:72ch;margin:0 0 22px}
+
+/* ============ frame ============ */
+.frame{margin:0}
+.fit{position:relative;width:100%;aspect-ratio:1040/580;border-radius:16px;overflow:hidden;
+  box-shadow:var(--shadow);border:1px solid var(--line);background:#8FBEDB}
+.fit canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ui{position:absolute;top:0;left:0;width:1040px;height:580px;transform-origin:0 0;transform:scale(var(--k,1));
+  pointer-events:none;font-family:"Avenir Next","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:#fff}
+figcaption{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--line-soft);color:var(--ink-2);font-size:.9rem}
+figcaption .tag{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;font-size:.68rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);border-radius:4px;padding:2px 7px;flex:none;margin-top:3px}
+figcaption p{max-width:74ch}
+
+/* ============ in-game HUD ============ */
+.hud{position:absolute;inset:22px 26px auto 26px;display:flex;justify-content:space-between;align-items:flex-start}
+.hud .lft{display:flex;gap:11px;align-items:flex-start}
+.chip.invin{padding:7px 16px 7px 9px;gap:9px;border-color:rgba(255,242,214,.42);box-shadow:0 0 0 4px rgba(255,240,206,.10),0 6px 22px -8px rgba(0,0,0,.5)}
+.chip.invin svg{width:30px;height:30px;flex:none}
+.chip.invin .num{font-size:16px;min-width:auto;color:#FFF6E2}
+.chip{display:flex;align-items:center;gap:12px;background:rgba(9,17,26,.46);
+  -webkit-backdrop-filter:blur(16px) saturate(130%);backdrop-filter:blur(16px) saturate(130%);
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:9px 18px 9px 14px;
+  box-shadow:0 6px 22px -8px rgba(0,0,0,.5)}
+.chip .ico{width:19px;height:19px;flex:none;opacity:.9}
+.track{width:184px;height:9px;border-radius:99px;background:rgba(255,255,255,.19);overflow:hidden}
+.track i{display:block;height:100%;border-radius:99px;background:var(--c);width:var(--v);box-shadow:0 0 14px -1px var(--c)}
+.chip .num{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;min-width:52px}
+.chip.score{padding:7px 20px;flex-direction:column;align-items:flex-end;gap:0;border-radius:20px}
+.chip.score b{font-size:30px;line-height:1.05;font-weight:700;font-variant-numeric:tabular-nums}
+.chip.score span{font-size:12px;opacity:.72;letter-spacing:.05em}
+.chip.cold{border-color:rgba(143,208,238,.45);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 6px 22px -8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 5px rgba(143,208,238,.14),0 6px 22px -8px rgba(0,0,0,.5)}}
+
+/* ============ in-game glass cards ============ */
+.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(11,19,28,.62);
+  -webkit-backdrop-filter:blur(26px) saturate(140%);backdrop-filter:blur(26px) saturate(140%);
+  border:1px solid rgba(255,255,255,.15);border-radius:26px;
+  box-shadow:0 30px 70px -26px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.1);text-align:center}
+.card.start{width:452px;padding:38px 44px 30px}
+.card.result{width:470px;padding:32px 42px 28px}
+.brand{font-size:46px;font-weight:700;letter-spacing:.15em;line-height:1.1;margin-left:.15em}
+.brand-en{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.4em;opacity:.6;margin:7px 0 0}
+.tagline{font-size:14.5px;opacity:.82;margin:16px 0 0;line-height:1.65}
+.best{display:flex;justify-content:center;align-items:baseline;gap:9px;margin:20px 0 0;font-size:13px;opacity:.68;letter-spacing:.03em}
+.best b{font-size:22px;opacity:1;font-variant-numeric:tabular-nums}
+.btn{display:block;width:100%;margin:22px 0 0;padding:14px 0;background:#FFC145;color:#2A1E08;border:0;border-radius:16px;
+  font-family:inherit;font-size:17px;font-weight:700;letter-spacing:.06em;box-shadow:0 10px 26px -10px rgba(255,193,69,.7)}
+.btn.ghost{background:rgba(255,255,255,.13);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.2)}
+.hint{font-size:12px;opacity:.5;margin:14px 0 0;letter-spacing:.06em}
+.rtitle{font-size:30px;font-weight:700;letter-spacing:.1em}
+.rscore{font-size:66px;font-weight:700;line-height:1;margin:10px 0 0;font-variant-numeric:tabular-nums;color:#FFC145}
+.rstats{display:grid;grid-template-columns:repeat(4,1fr);margin:22px 0 0}
+.rstats div{padding:0 4px}
+.rstats dt{font-size:11px;opacity:.6;letter-spacing:.07em}
+.rstats dd{margin:4px 0 0;font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
+.rrule{height:1px;background:rgba(255,255,255,.16);margin:22px 0 0}
+.rbest{font-size:12.5px;opacity:.62;margin:14px 0 0;letter-spacing:.04em}
+.fig{margin:0}
+.fig img{display:block;width:100%;border:1px solid var(--line);border-radius:9px}
+.fig .rl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0 0 6px}
+.fig+.fig{margin-top:16px}
+.plabel{position:absolute;color:rgba(18,38,56,.74);font-size:12.5px;letter-spacing:.06em;text-align:center}
+
+/* ============ annotation ============ */
+.pin{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#FFC145;color:#2A1E08;
+  font-size:13px;font-weight:700;line-height:26px;text-align:center;font-variant-numeric:tabular-nums;
+  box-shadow:0 0 0 3px rgba(18,28,38,.55),0 3px 10px rgba(0,0,0,.45)}
+.legend{display:grid;gap:1px;background:var(--line);grid-template-columns:repeat(auto-fit,minmax(268px,1fr));
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:18px;padding:0}
+.legend li{background:var(--surface);padding:12px 16px;list-style:none;display:flex;gap:11px;align-items:flex-start;font-size:.9rem}
+.legend .n{flex:none;width:21px;height:21px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  font-size:11.5px;font-weight:700;line-height:21px;text-align:center;margin-top:3px;font-variant-numeric:tabular-nums}
+.legend b{display:block;font-weight:650}
+.legend em{display:block;font-style:normal;color:var(--ink-2);font-size:.84rem;line-height:1.5}
+
+/* ============ tables ============ */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.9rem}
+th,td{padding:11px 16px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:top}
+thead th{background:var(--surface-2);color:var(--ink-3);font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;font-weight:500;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--surface) 55%,transparent)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+td .sub{display:block;color:var(--ink-2);font-size:.83rem;line-height:1.5;margin-top:2px}
+
+/* ============ palette ============ */
+.pal{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(186px,1fr))}
+.sw{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.sw .duo{display:flex;height:74px}
+.sw .duo span{flex:1;position:relative}
+.sw .duo span::after{content:attr(data-l);position:absolute;left:8px;bottom:6px;
+  font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;font-size:9px;letter-spacing:.1em;
+  color:rgba(255,255,255,.82);text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.sw .duo span.lt::after{color:rgba(20,30,40,.72);text-shadow:none}
+.sw .meta{padding:10px 13px 12px}
+.sw .meta b{display:block;font-size:.88rem;font-weight:650}
+.sw .meta code{display:block;color:var(--ink-3);font-size:.72rem;margin-top:3px}
+
+/* ============ callout / blocks ============ */
+.callout{border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line));
+  background:color-mix(in srgb,var(--accent) 7%,var(--surface));border-radius:12px;padding:22px 26px}
+.callout h3{color:var(--accent)}
+.callout ul{margin:.6em 0 0;padding-left:1.15em;color:var(--ink-2);font-size:.93rem}
+.callout li{margin-bottom:.42em} .callout li:last-child{margin-bottom:0}
+.cols{display:grid;gap:26px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.blk{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:20px 22px}
+.blk ul{margin:0;padding-left:1.15em;color:var(--ink-2);font-size:.93rem}
+.blk li{margin-bottom:.42em} .blk li:last-child{margin-bottom:0}
+.blk li b{color:var(--ink)}
+
+/* ============ footer ============ */
+footer{padding:44px 0 72px;color:var(--ink-3);font-size:.86rem}
+footer .steps{display:grid;gap:10px;margin:14px 0 0;padding:0;list-style:none;counter-reset:s}
+footer .steps li{counter-increment:s;display:flex;gap:11px;align-items:flex-start;color:var(--ink-2);font-size:.92rem}
+footer .steps li::before{content:counter(s);flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);
+  color:var(--ink-3);font-size:11px;line-height:19px;text-align:center;margin-top:3px;font-family:ui-monospace,Menlo,monospace}
+
+@media (max-width:640px){
+  .card.start{width:min(452px,88%);padding:30px 30px 24px}
+  .card.result{width:min(470px,92%);padding:26px 28px 22px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">PICO OS 6 · WindowContainer 平面窗口 · 1040 × 580 dp</p>
+    <h1>越冬</h1>
+    <p class="subname">OVERWINTER</p>
+    <p class="lede">一只小鸟穿过寒冬的枯枝林。体温每秒都在流失，撞上枝干掉得更快——只有挂在枝头的浆果能把它捂回来。飞多远，取决于你敢贴着树枝飞多近。</p>
+    <dl class="specstrip">
+      <div><dt>容器</dt><dd>WindowContainer</dd></div>
+      <div><dt>窗口尺寸</dt><dd>1040 × 580 dp</dd></div>
+      <div><dt>美术</dt><dd>水彩位图素材 + 程序合成</dd></div>
+      <div><dt>生命</dt><dd>体温槽 · 持续流失</dd></div>
+      <div><dt>输入</dt><dd>点击窗口任意处扇翅</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section style="padding-bottom:0;border-bottom:0">
+    <div class="callout" style="border-color:color-mix(in srgb,var(--frost) 38%,var(--line));background:color-mix(in srgb,var(--frost) 8%,var(--surface))">
+      <h3 style="color:var(--frost)">读之前：这四帧是用你那张参考图<b>真的抠图合成</b>的</h3>
+      <p style="color:var(--ink-2);font-size:.95rem">小鸟、浆果、花枝、树干、远山全部从 <code>ref-spritesheet.png</code> 抠出来（泛洪法去纸底，边缘半透明羽化保住了），再按游戏的图层顺序和视差合成。所以你现在看到的<b>就是这套素材的真实质感</b>，不是模拟。</p>
+      <p style="color:var(--ink-2);font-size:.95rem;margin:0">但有三处是凑合的，等真素材到位才能解决，先说清楚：<b>①</b> 背景是 154×208 的缩略图放大约 4 倍再镜像平铺的，所以远景偏糊、能看出对称——这正是清单里要 2400×700 的原因；<b>②</b> 上下障碍共用同一根树干贴图（真素材有 3 种树皮变体），而且两端都是那张贴图自带的<b>积雪端</b>——所以清单里的「锯断截面帽 + 年轮」（图例 4）在这个预览里<b>是看不到的</b>，上障碍的枝头暂时也是雪冠加程序冰柱；<b>③</b> <b>前景雪地层直接去掉了</b>，因为缩略图底部只有 33px，拉到 90dp 会糊成一条暗带。冰柱是程序画的。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">状态 01</span><h2>开始页</h2></div>
+    <p class="snote">场景在卡片后面持续运转——飘雪、视差、小鸟扇翅——先让人看见这片林子，再让他按下按钮。卡片是 SpatialUI 磨砂玻璃面板，不是贴在画布上的一张图。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="start">
+        <canvas></canvas>
+        <div class="ui">
+          <div class="card start">
+            <div class="brand">越冬</div>
+            <p class="brand-en">OVERWINTER</p>
+            <p class="tagline">体温在流失<br>吃到浆果，才撑得过这片林子</p>
+            <p class="best"><span>历史最高</span><b>82</b><span>分</span></p>
+            <button class="btn">开始飞行</button>
+            <p class="hint">点击窗口任意处 · 扇动翅膀</p>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="tag">Idle</span>
+        <p>没有教程页。操作只有一个动作，一行提示说得完；小鸟在卡片后面自己飞给你看，比任何图示都快。</p>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">状态 02</span><h2>游玩中 · 体温 68°</h2></div>
+    <p class="snote">正常温区，天色晴、雪松林饱和度完整。HUD 只有两枚胶囊，压在画面最上一条，中间大片区域完全让给玩法。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="warm">
+        <canvas></canvas>
+        <div class="ui">
+          <div class="hud">
+            <div class="chip">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 9.5v5.6"/></svg>
+              <div class="track"><i style="--v:68%;--c:#F5BE4B"></i></div>
+              <span class="num">68°</span>
+            </div>
+            <div class="chip score"><b>12</b><span>最高 82</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="tag">Playing</span>
+        <p>缝隙里分两条带：<b>中线上是浆果</b>，顺着航线就能吃到，因为它是命、不能让人饿死；<b>贴着判定线内侧的是花朵</b>，得擦着树枝飞才够得着，换来 3 秒无敌（外加 5 分）。所以路线不再只有"穿过去"一个解——每一组枝干都在问你：稳一点，还是贪一点。</p>
+      </figcaption>
+    </figure>
+  </section>
+
+
+  <section>
+    <div class="shead"><span class="snum">状态 03 · V2</span><h2>无敌 3 秒</h2></div>
+    <p class="snote"><b>本版不做，已推到 V2。</b>设计保留在这里，等 V1 跑通再加。吃到花朵之后——这一帧是这个道具存在的理由：小鸟正<b>从枝干中间穿过去</b>——接触点炸开一团雪雾，而不是死。低温下四角的霜华也会暂时退去，所以「松了一口气」是看得见的，不用读 HUD。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="invin">
+        <canvas></canvas>
+        <div class="ui">
+          <div class="hud">
+            <div class="lft">
+              <div class="chip">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 9.5v5.6"/></svg>
+                <div class="track"><i style="--v:30%;--c:#9BC6E4"></i></div>
+                <span class="num">30&deg;</span>
+              </div>
+              <div class="chip invin">
+                <svg viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.20)" stroke-width="3.4"/>
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="#FFF4DC" stroke-width="3.4"
+                          stroke-linecap="round" stroke-dasharray="87.9" stroke-dashoffset="29.3"
+                          transform="rotate(-90 18 18)"/>
+                  <circle cx="18" cy="18" r="4.6" fill="#FFF4DC" opacity=".9"/>
+                </svg>
+                <span class="num">2.0s</span>
+              </div>
+            </div>
+            <div class="chip score"><b>19</b><span>最高 82</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="tag">V2 &middot; Invincible</span>
+        <p>无敌只挡碰撞，<b>不保暖</b>——体温照旧每秒往下掉。所以它不是免死金牌，是三秒钟"可以走直线"的通行证：这段时间最优解从上下起伏穿缝隙，变成压着直线尽量多穿几组。节奏对比就是奖励本身。</p>
+      </figcaption>
+    </figure>
+  </section>
+  <section>
+    <div class="shead"><span class="snum">状态 04</span><h2>体温告急 · 18°</h2></div>
+    <p class="snote">低温不是加一层滤镜。天空和远山<b>换了一整张画</b>——五档氛围按体温交叉淡入，这一帧正落在「紫暮」和「蓝夜」之间；中景和前景的素材则用运行时染色跟上，小鸟和浆果只染一半，永远是画面里最暖的两点。四角结霜、飘雪加密。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="cold">
+        <canvas></canvas>
+        <div class="ui">
+          <div class="hud">
+            <div class="chip cold">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#BFE4F5" stroke-width="1.9" stroke-linecap="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 9.5v5.6"/></svg>
+              <div class="track"><i style="--v:18%;--c:#63A9DE"></i></div>
+              <span class="num">18°</span>
+            </div>
+            <div class="chip score"><b>27</b><span>最高 82</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="tag">Playing · Critical</span>
+        <p>不看 HUD 也知道快不行了——这是选体温槽而不是心形血格换来的最大好处：状态写在整张画面上，而玩家的眼睛本来就在画面中央。</p>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">状态 05</span><h2>结算</h2></div>
+    <p class="snote">场景不切走、不淡出黑屏——原地压暗，小鸟栽进雪里。结算卡只回答三件事：飞了多远、吃了几颗、撑了多久。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="over">
+        <canvas></canvas>
+        <div class="ui">
+          <div class="card result">
+            <div class="rtitle">冻僵了</div>
+            <div class="rscore">57</div>
+            <dl class="rstats">
+              <div><dt>穿过枝干</dt><dd>27</dd></div>
+              <div><dt>吃到浆果</dt><dd>9</dd></div>
+              <div><dt>采到花朵</dt><dd>6</dd></div>
+              <div><dt>坚持</dt><dd>48.6s</dd></div>
+            </dl>
+            <div class="rrule"></div>
+            <p class="rbest">历史最高 82 分 · 27 枝 + 6 朵 × 5</p>
+            <button class="btn">再飞一次</button>
+            <button class="btn ghost" style="margin-top:10px">回到开始页</button>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="tag">Result</span>
+        <p>破纪录时标题换成"新纪录！"、分数走一段计数动画，其余元素完全不动——只用一处变化承载好消息。</p>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">解剖</span><h2>一帧画面是怎么叠出来的</h2></div>
+    <p class="snote">下面这帧是静止的规格图。编号标在锚点上，对照下方图例读。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="spec">
+        <canvas></canvas>
+        <div class="ui">
+          <div class="hud">
+            <div class="chip">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 9.5v5.6"/></svg>
+              <div class="track"><i style="--v:74%;--c:#F5BE4B"></i></div>
+              <span class="num">74°</span>
+            </div>
+            <div class="chip score"><b>08</b><span>最高 82</span></div>
+          </div>
+          <span class="pin" style="left:58px;top:88px">1</span>
+          <span class="pin" style="left:968px;top:92px">2</span>
+          <span class="pin" style="left:150px;top:92px">3</span>
+          <span class="pin" style="left:216px;top:196px">4</span>
+          <span class="pin" style="left:104px;top:226px">5</span>
+          <span class="pin" style="left:526px;top:300px">6</span>
+          <span class="pin" style="left:258px;top:344px">7</span>
+          <span class="pin" style="left:810px;top:329px">8</span>
+          <span class="pin" style="left:668px;top:300px">9</span>
+          <span class="pin" style="left:604px;top:452px">10</span>
+          <span class="pin" style="left:906px;top:556px">11</span>
+          <span class="pin" style="left:198px;top:258px">12</span>
+        </div>
+      </div>
+    </figure>
+    <ol class="legend">
+      <li><span class="n">1</span><div><b>体温槽</b><em>持续左退。填充色随体温从暖橙插值到冷蓝。</em></div></li>
+      <li><span class="n">2</span><div><b>得分 / 最高分</b><em>穿过一组枝干 +1。历史最高常驻小字。</em></div></li>
+      <li><span class="n">3</span><div><b>上障碍 · 断枝干</b><em>圆角矩形主干 + 木纹 + 冰壳高光 + 断枝节疤。节疤最远只到碰撞矩形的边。</em></div></li>
+      <li><span class="n">4</span><div><b>锯断截面帽</b><em>68dp 宽 + 断面椭圆 + 两圈年轮。<b>本预览未含</b>——现在两端用的都是树干贴图自带的雪端。</em></div></li>
+      <li><span class="n">5</span><div><b>冰柱 = 碰撞下沿</b><em>五根等长 12dp。最长那根的尖端就是判定线。</em></div></li>
+      <li><span class="n">6</span><div><b>浆果丛 · 回体温</b><em>长梗垂到缝隙中线，顺着航线就能吃到——它是命，不能让人饿死。带暖色脉动辉光。</em></div></li>
+      <li><span class="n">7</span><div><b>小鸟</b><em>机身 + 单翅两张素材。翅膀绕肩点走 +16°→−76°，下扑快、回收慢；俯仰角另由竖直速度推出。</em></div></li>
+      <li><span class="n">8</span><div><b>下障碍 · 积雪冠 = 碰撞上沿</b><em>雪冠最高点就是判定线；冠下垂的冰柱全在碰撞体内，可长短不一。</em></div></li>
+      <li><span class="n">9</span><div><b>远山 L2</b><em>两道折线多边形剪影 + 峰顶雪帽，视差 0.055 / 0.08。</em></div></li>
+      <li><span class="n">10</span><div><b>雪松林 L3</b><em>三段三角形堆叠，前后两排，视差 0.20 / 0.36。</em></div></li>
+      <li><span class="n">11</span><div><b>雪地</b><em>目前由背景图自带。独立的前景雪地层（视差 1.10、压在小鸟之上）等 <code>snowfield.png</code> 到位后再加——缩略图底部只有 33px，撑不起来。</em></div></li>
+      <li><span class="n">12</span><div><b>花朵 · 3 秒无敌</b><em>短梗贴在判定线内侧 30dp，得擦着树枝飞才够得着。约每 7 组枝干出现一朵。</em></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">构件</span><h2>放大看构件</h2></div>
+    <p class="snote">这排是从 <code>ref-spritesheet.png</code> 抠出来的<b>真素材</b>，按游戏里的实际显示尺寸摆放（小鸟 64dp、浆果 36dp、树干 76dp 宽）。放在纸底上看，是为了单独判断每一件的质感和边缘干不干净。</p>
+    <figure class="frame">
+      <div class="fit" data-scene="parts" style="aspect-ratio:1040/330;background:#CADFEE">
+        <canvas></canvas>
+        <div class="ui" style="height:330px">
+          <span class="plabel" style="left:27px;top:272px;width:118px">举翅 +16°</span>
+          <span class="plabel" style="left:145px;top:272px;width:118px">下扑中</span>
+          <span class="plabel" style="left:263px;top:272px;width:118px">下扑到底 −76°</span>
+          <span class="plabel" style="left:381px;top:272px;width:118px">回收中</span>
+          <span class="plabel" style="left:540px;top:272px;width:120px">浆果 · 回体温</span>
+          <span class="plabel" style="left:670px;top:272px;width:120px">花朵 · 无敌</span>
+          <span class="plabel" style="left:840px;top:272px;width:120px">树干</span>
+        </div>
+      </div>
+    </figure>
+    <div class="cols" style="margin-top:26px">
+      <div class="blk">
+        <h3>小鸟 · 86 × 74dp</h3>
+        <ul>
+          <li><b>只走机身 + 单翅</b>，不用固定帧序列。上面那排就是同一对素材在 4 个拍打相位上的样子</li>
+          <li><b>翅膀行程</b> 绕肩点 <code>+16° → −76°</code>，共 92°</li>
+          <li><b>非对称节拍</b> 下扑占周期 30% 且<b>加速</b>（u²），回收占 70% 且<b>减速</b>（1−(1−v)<sup>2.4</sup>）——真鸟就是这样，等速来回会像扇子</li>
+          <li><b>拍打速率随上升速度走</b>；下落时收敛到滑翔角 +1°，只留一点余振</li>
+          <li><b>俯仰</b> 由竖直速度换算，钳在 −22° ~ +36°，与拍打相互独立</li>
+          <li><b>投影</b> 程序绘制，不进素材</li>
+        </ul>
+      </div>
+      <div class="blk">
+        <h3>障碍与收集物</h3>
+        <ul>
+          <li><b>主干</b> 素材 64dp 宽，按需从远离缝隙的一端裁切。不平铺，靠一张 384dp 长身覆盖最大高度</li>
+          <li><b>断枝节疤</b> 画进主干素材，横向<b>最远 ±38dp</b>——这是碰撞矩形的边</li>
+          <li><b>截面帽</b> 76dp 宽，含 5 根等长冰柱。<b>判定线从素材 alpha 自动算</b>：最低不透明像素行</li>
+          <li><b>积雪冠</b> 72dp 宽，判定线取最高不透明像素行</li>
+          <li><b>浆果丛</b> 36 × 42dp，梗在正上方（要从枝头垂下）。辉光是程序绘制的径向渐变，2s 一次呼吸</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="blk" style="margin-top:26px">
+      <h3>为什么不用图集里那 6 帧做动画</h3>
+      <p style="color:var(--ink-2);font-size:.93rem">把 6 帧逐帧量过：<b>翼尖总共只在 19° 范围内摆动</b>（−112.3° 到 −93.1°，全落在「上举偏后」这一个区域），<b>没有任何一帧翼尖低于水平</b>——整套里一帧下扑都没有。同时机身宽度从 108px 到 135px，<b>极差 25%</b>。</p>
+      <p style="color:var(--ink-2);font-size:.93rem">下面上排是那 6 帧<b>已经归一化过</b>的样子（缩放到同一机身宽度、按机身中心对齐，也就是已经替它把「沸腾」修掉了）。即便如此，翅膀几乎没动。下排是同一张图集里第 0 帧拆出的机身 + 单翅，绕肩点转出的 6 个相位。</p>
+      <figure class="fig"><p class="rl">图集 6 帧 · 归一化对齐后 · 翼尖行程 19°</p><img src="__FIG_flap-sheet__" alt="图集六帧归一化后的对比，翅膀几乎不动"></figure>
+      <figure class="fig"><p class="rl">机身 + 单翅 · 绕肩点 · 行程 92°</p><img src="__FIG_flap-rig__" alt="机身加单翅绕肩点旋转的六个拍打相位"></figure>
+      <p style="color:var(--ink-2);font-size:.93rem;margin-top:14px"><b>所以现在这只鸟本来就是这张图集的。</b>机身和翅膀都是从第 0 帧切出来的，只是把翅膀单独拆开由程序转——用的是同一套水彩笔触，换来的是一个真的能上下拍打的行程。</p>
+      <p style="color:var(--ink-2);font-size:.93rem;margin:0">如果要回到帧序列路线，需要重出一排<b>带下扑帧</b>的小鸟。素材清单里给了可直接粘贴的提示词。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">图层</span><h2>五层 + 三个覆盖层</h2></div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>层</th><th>内容</th><th class="num">视差</th><th>素材</th><th>体温如何影响它</th></tr></thead>
+        <tbody>
+          <tr><td class="num">L1</td><td>天空 + 远山</td><td class="num">0.08</td><td><code>mountains_*.png</code> 2400×700 ×5<span class="sub">镜像拼接做无缝循环</span></td><td>五档氛围<b>交叉淡入</b>：晴日 → 阴雪 → 金色黄昏 → 紫暮 → 蓝夜</td></tr>
+          <tr><td class="num">L2</td><td>雪松林中景</td><td class="num">0.30</td><td><code>pines.png</code> 2400×520 透明</td><td>运行时染色（正片叠底往冷蓝走 + 降饱和）</td></tr>
+          <tr><td class="num">L3</td><td>障碍枝干</td><td class="num">1.00</td><td><code>trunk_*.png</code> ×3<br><code>cap_top_*.png</code> ×2<br><code>crown_bot_*.png</code> ×2</td><td>同上染色。<b>唯一参与碰撞的一层</b></td></tr>
+          <tr><td class="num">L4</td><td>浆果 / 花朵 / 小鸟</td><td class="num">1.00</td><td><code>berry_*</code> <code>blossom_*</code> <code>bird_*</code></td><td>小鸟、浆果、花朵<b>都不参与染色</b>——收集物必须在任何温度下都最扎眼，否则低温时玩家找不到救命的东西</td></tr>
+          <tr><td class="num">L5</td><td>前景雪地</td><td class="num">1.10</td><td><code>snowfield.png</code> 2400×220 透明<span class="sub">本预览尚未包含</span></td><td>同 L2 染色。压在小鸟之上，遮住落地瞬间</td></tr>
+          <tr><td class="num">O1</td><td>飘雪粒子</td><td class="num">—</td><td><code>flake_0/1/2.png</code> 64×64</td><td>密度 60 粒（暖）→ 210 粒（极寒），下落速度同步加快</td></tr>
+          <tr><td class="num">O4</td><td>无敌光晕 / 余晖 / 雪雾</td><td class="num">—</td><td>程序绘制（加色混合）</td><td>吃到花朵后 3 秒。同时把 O2 霜华压到 38%</td></tr>
+          <tr><td class="num">O2</td><td>四角霜华</td><td class="num">—</td><td><code>frost_corner.png</code> 512×512<span class="sub">四角旋转复用同一张</span></td><td>整体 alpha：体温约 &lt; 45° 开始显影，随体温加深</td></tr>
+          <tr><td class="num">O3</td><td>纸纹颗粒</td><td class="num">—</td><td><code>paper_grain.png</code> 256×256 平铺</td><td>恒定。正片叠底盖全屏，把位图层和程序绘制的部分缝到一起</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="snote" style="margin:20px 0 0">L1 的五档氛围图是<b>体温变色的主力</b>——天空和远山占画面上半，氛围主要靠它。其余层用运行时染色跟上。这样即使改成位图，「不看 HUD 也知道快冻僵了」这个表达仍然成立。</p>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">调色</span><h2>参考色卡与低温染色</h2></div>
+    <p class="snote">左半是从你那张 <code>ref-spritesheet.png</code> 色卡里<b>实测</b>出来的中位值（水彩平涂本身偏淡，这是真实像素值不是我目测的）。右半是极寒时运行时染色后的结果——降饱和 55% 再往藏青 <code>#2C3F58</code> 拉 42%。小鸟和浆果只用一半强度，让它们在任何温度下都是画面里最暖的东西。</p>
+    <div class="pal">
+      <div class="sw"><div class="duo"><span class="lt" style="background:#96A5A9" data-l="96A5A9"></span><span style="background:#6D7984" data-l="6D7984"></span></div><div class="meta"><b>天空 / 雾</b><code>全强度染色</code></div></div>
+      <div class="sw"><div class="duo"><span class="lt" style="background:#A9BAC4" data-l="A9BAC4"></span><span style="background:#798592" data-l="798592"></span></div><div class="meta"><b>远山 · 淡蓝</b><code>全强度染色</code></div></div>
+      <div class="sw"><div class="duo"><span class="lt" style="background:#ECDAB9" data-l="ECDAB9"></span><span style="background:#96999B" data-l="96999B"></span></div><div class="meta"><b>雪 / 纸白</b><code>全强度染色</code></div></div>
+      <div class="sw"><div class="duo"><span class="lt" style="background:#D6AB5B" data-l="D6AB5B"></span><span class="lt" style="background:#AA956C" data-l="AA956C"></span></div><div class="meta"><b>小鸟 · 暖金</b><code>半强度 · 永远最暖</code></div></div>
+      <div class="sw"><div class="duo"><span style="background:#A5695A" data-l="A5695A"></span><span style="background:#826460" data-l="826460"></span></div><div class="meta"><b>浆果 · 砖红</b><code>半强度 · 要一眼看见</code></div></div>
+      <div class="sw"><div class="duo"><span style="background:#71624C" data-l="71624C"></span><span style="background:#505459" data-l="505459"></span></div><div class="meta"><b>树皮 · 深棕</b><code>全强度染色</code></div></div>
+      <div class="sw"><div class="duo"><span style="background:#6B7C89" data-l="6B7C89"></span><span style="background:#55616F" data-l="55616F"></span></div><div class="meta"><b>暗部 · 石板蓝</b><code>全强度染色</code></div></div>
+    </div>
+    <p class="snote" style="margin:22px 0 0"><b>UI 层（HUD 胶囊、开始卡、结算卡）不参与染色</b>——那部分走 <code>PicoTheme</code> 语义角色，见下一节。染色只作用在插画层上。</p>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">UI</span><h2>HUD 与面板 · PicoTheme 角色映射</h2></div>
+    <p class="snote">插画是画布，UI 是 SpatialUI 组件，两者在同一个 <code>Box</code> 里分层。UI 一律禁用 Material / Material3，颜色只取 <code>PicoTheme</code> 语义角色。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>元素</th><th>组件</th><th>颜色角色</th><th>字体角色</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td>体温胶囊底</td><td>Surface</td><td><code>backgroundMaterial</code> 磨砂玻璃</td><td>—</td><td>圆角 999，外边距 22 × 26dp</td></tr>
+          <tr><td>体温槽填充</td><td>Canvas</td><td>插画常量（暖橙 ↔ 冷蓝）<span class="sub">此处刻意不用主题角色：它是数据可视化，语义色会丢掉"温度"这层含义</span></td><td>—</td><td>184 × 9dp，带同色辉光</td></tr>
+          <tr><td>体温数值</td><td>Text</td><td><code>labelPrimary</code></td><td><code>titleMedium</code></td><td>等宽数字，定宽避免跳动</td></tr>
+          <tr><td>得分</td><td>Text</td><td><code>labelPrimary</code></td><td><code>displaySmall</code></td><td>右上对称位</td></tr>
+          <tr><td>最高分小字</td><td>Text</td><td><code>labelSecondary</code></td><td><code>labelSmall</code></td><td>—</td></tr>
+          <tr><td>开始 / 结算卡</td><td>Surface</td><td><code>backgroundMaterial</code> 磨砂玻璃</td><td>—</td><td>圆角 26dp，居中</td></tr>
+          <tr><td>标题「越冬」</td><td>Text</td><td><code>labelPrimary</code></td><td><code>displayMedium</code></td><td>字距 .15em</td></tr>
+          <tr><td>主按钮</td><td>Button</td><td><code>labelPrimary</code> on <code>fillPrimary</code></td><td><code>labelLarge</code></td><td>hover 用 <code>Modifier.spatialHoverEffect</code></td></tr>
+          <tr><td>次按钮</td><td>Button</td><td><code>labelPrimary</code> on <code>fillTertiary</code></td><td><code>labelLarge</code></td><td>同上</td></tr>
+          <tr><td>分隔线</td><td>Divider</td><td><code>dividerLine</code></td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="snote" style="margin:20px 0 0">上表的角色名需要在写代码前用 <code>spatial-ui-design-style</code> 和项目实际 SDK 版本核对一次——本效果图按通用 PicoTheme 命名习惯填写，<b>尚未逐个验证</b>。</p>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">规则</span><h2>一条约束了整个美术方案的硬规则</h2></div>
+    <div class="callout">
+      <h3>缝隙边界必须所见即所判</h3>
+      <p style="color:var(--ink-2);font-size:.95rem">Flappy 类游戏的口碑几乎全押在"我到底有没有撞上"这一个判断上。这条规则不是画完之后加的检查项，它<b>直接决定了障碍长什么样</b>——第一版效果图里的斜分叉就是因为它才被砍掉的：</p>
+      <ul>
+        <li><b>碰撞体是单个矩形</b>，宽 76dp，从画面边缘一直到缝隙侧的判定线。不做逐像素、不做多边形。</li>
+        <li><b>真正需要像素级准确的只有缝隙侧那一条边。</b>小鸟只有在障碍的竖直区间内才可能碰到矩形的左右边，而到了那个位置它本来就已经撞上了；但缝隙侧那条边是每一次穿越都要贴的。所以美术预算全部押在这条边上。</li>
+        <li><b>于是障碍不能有横向伸出的斜分叉。</b>斜枝会跑到矩形外面：小鸟从旁边掠过时，会看着穿过了树枝却没死。改成<b>断枝节疤</b>——短凸起，最远抵到矩形边，不越界。森林感交给背景的雪松林和远山去扛，障碍本身保持利落的竖直剪影。</li>
+        <li><b>判定线画得出来</b>：上障碍是冰柱尖端（五根等长 12dp，中间那根正好落在判定线上），下障碍是积雪冠的最高点。玩家看到的边界就是判定的边界。</li>
+        <li><b>两处已知余量，都是刻意的、有界的</b>：① 主干最宽 58dp，比 76dp 的矩形窄——这是上一条说的无害方向；② 冰柱之间的空隙会被矩形算进去，最多 12dp。尖刺本来就让人本能多留余量，判定偏严比偏松安全。</li>
+        <li><b>缝隙里只允许出现收集物</b>——浆果和花朵，两者都不参与碰撞。所以"缝隙里有东西"这件事永远只有一个含义：可以吃。</li>
+        <li><b>收集物必须整体落在缝隙内，中心距判定线 ≥ 30dp。</b>这条是这一轮补的，起因是一个真实缺陷：花朵原本画在 <code>x+24 … x+76</code>，而碰撞矩形是 <code>x−38 … x+38</code>，它<b>左边约 14dp 压在死亡矩形里</b>——看着能吃，去够就先撞死在重叠的那一段上。30dp = 小鸟半高 21dp + 9dp 余量，刚好让"擦边吃到"成立而不致死。</li>
+        <li><b>改成位图后这条规则不但没放松，反而更硬了。</b>矢量时代我可以随手把画错的枝条改窄；位图画超了只能重出。所以它现在是<b>素材验收条款</b>：每张 <code>trunk_*.png</code> 我都会用脚本量最大内容宽度，超过 152px 的直接打回；<code>cap_top_*</code> / <code>crown_bot_*</code> 的判定线由脚本从 alpha 通道自动算出来写进配置，不靠人对齐。</li>
+        <li>调试期加一个 <code>DEBUG</code> 开关把碰撞矩形描边画出来，逐帧核对轮廓与矩形对齐。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="assets">
+    <div class="shead"><span class="snum">素材</span><h2>素材清单 · 30 项</h2></div>
+    <p class="snote">全部按 <b>2× 密度</b>出图（1dp = 2px），PNG 带 alpha，落库前统一转 WebP。完整规格、生成提示词与实测数据见 <code>.spatialsdk/design-ref/asset-manifest.md</code>。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>组</th><th>文件</th><th class="num">画布 px</th><th class="num">张数</th><th>要点</th></tr></thead>
+        <tbody>
+          <tr><td>A 小鸟</td><td><code>bird_body</code> / <code>bird_wing</code></td><td class="num">256² / 192²</td><td class="num">2</td><td><b>唯一路线。</b>机身不画翅膀且<b>背部要补全</b>；翅膀单出，运行时绕肩点走 +16°→−76°</td></tr>
+                    <tr><td>B 收集物</td><td><code>berry_0..2</code></td><td class="num">160²</td><td class="num">3</td><td>梗在正上方，要从枝头垂下来</td></tr>
+          <tr><td>B 收集物</td><td><code>blossom_0..2</code></td><td class="num">160²</td><td class="num">3</td><td><b>无敌道具</b>（3 秒）。白、松散、低饱和，剪影必须和红浆果一眼分得开</td></tr>
+          <tr><td>C 障碍</td><td><code>trunk_0..2</code></td><td class="num">160×768</td><td class="num">3</td><td>上下端<b>硬切</b>；节疤横向最远 ±38dp；顶端 200px 内无节疤</td></tr>
+          <tr><td>C 障碍</td><td><code>cap_top_0..1</code></td><td class="num">192×160</td><td class="num">2</td><td>截面 + 5 根冰柱，长度相差 ≤ 6px</td></tr>
+          <tr><td>C 障碍</td><td><code>crown_bot_0..1</code></td><td class="num">192×160</td><td class="num">2</td><td>积雪冠，最高点在正中</td></tr>
+          <tr><td>D 背景</td><td><code>mountains_*</code></td><td class="num">2400×700</td><td class="num">5</td><td>五档氛围；左右边缘别放独立峰（要镜像拼接）</td></tr>
+          <tr><td>D 背景</td><td><code>pines</code> / <code>snowfield</code></td><td class="num">2400×520 / 2400×220</td><td class="num">2</td><td>压暗低饱和，运行时要染色</td></tr>
+          <tr><td>E 效果</td><td><code>flake_0..2</code></td><td class="num">64²</td><td class="num">3</td><td>手绘雪粒，做粒子用</td></tr>
+          <tr><td>E 效果</td><td><code>frost_corner</code></td><td class="num">512²</td><td class="num">1</td><td>只需一个角，四角旋转复用</td></tr>
+          <tr><td>E 效果</td><td><code>paper_grain</code></td><td class="num">256²</td><td class="num">1</td><td><b>可四方连续平铺</b>，正片叠底盖全屏</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout" style="margin-top:26px;border-color:color-mix(in srgb,var(--warn) 34%,var(--line));background:color-mix(in srgb,var(--warn) 6%,var(--surface))">
+      <h3 style="color:var(--warn)">现有两张图为什么不能直接用</h3>
+      <p style="color:var(--ink-2);font-size:.95rem">不是风格问题——风格很好，就按它走。是三条技术阻塞，都可以靠重出素材解决：</p>
+      <ul>
+        <li><b>没有透明通道。</b><code>ref-spritesheet.png</code> 是 1536×1024 RGBA，但 alpha 全是 255——米色 <code>#F6F2EC</code> 纸底是实色画进去的。水彩边缘是柔的半透明羽化，从实色底上抠必然留一圈米边。<b>纸纹要单独出一张平铺贴图，不要画进每个素材里。</b></li>
+        <li><b>分辨率两头分化。</b>小鸟（实测 ~130×110px）、浆果（~65×80px）、花朵（~90×90px）刚好够；但树干只有 <b>85×137px</b>（需要 152×768），远山只有 <b>165×152px</b>（需要 2400×700），差 6~14 倍。</li>
+        <li><b>树干侧枝伸出太远。</b>主干约 60px 宽，侧枝最远伸出约 40px，换算后严重超出 76dp 的碰撞矩形。后果就是下一节那条规则要防的事。另外 6 帧小鸟身体大小差约 30%、5 帧翅膀都朝上没有下扑帧，连播是「沸腾」不是扇翅。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="snum">边界</span><h2>这一版不做</h2></div>
+    <div class="cols">
+      <div class="blk">
+        <h3>内容</h3>
+        <ul>
+          <li>不做皮肤 / 金币 / 内购</li>
+          <li>不做排行榜与联网，最高分只存本地</li>
+          <li>不做多关卡与主题切换，难度靠单一曲线爬升</li>
+          <li>不做暂停菜单——中途松手就是死，这是这类游戏的默认契约</li>
+          <li>不做背景音乐，只做少量音效（扇翅、吃到、撞击、低温心跳）</li>
+        </ul>
+      </div>
+      <div class="blk">
+        <h3>技术</h3>
+        <ul>
+          <li>不做运行时图集打包，素材直接按文件读，构建期只做 WebP 压缩</li>
+          <li>不引入游戏引擎或第三方渲染库</li>
+          <li>不用 3D / ECS——这是纯 2D 平面窗口应用</li>
+          <li>不用手部追踪（<code>WindowContainer</code> 下拿不到数据），输入只走窗口点击</li>
+          <li>不做骨骼动画，小鸟俯仰与扇翅都由参数直接算</li>
+          <li>不为五档氛围各做一套雪松/雪地素材，那三层统一用运行时染色</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p class="eyebrow">下一步</p>
+  <ol class="steps">
+    <li>你按 <code>asset-manifest.md</code> 重出 30 项素材（建议按 A/B/C/D/E 分五组出图，同组内风格才稳）</li>
+    <li>我跑校验脚本：量 <code>trunk_*</code> 的最大内容宽度、从 alpha 算 <code>cap_top_*</code> / <code>crown_bot_*</code> 的判定线、转 WebP 量包体。不合格的列出来退回重出</li>
+    <li>据此写出 <code>design-contract.md</code>：元素表（含素材文件名与判定线数值）、状态表、文案表、截图验证计划</li>
+    <li>契约确认后才执行 <code>pico-cli project create</code>，开始写代码</li>
+    <li>实现完成后上模拟器截图，逐条比对契约</li>
+  </ol>
+  <p style="margin-top:26px;color:var(--ink-3);font-size:.82rem">四帧状态图为程序绘制的<b>构图参考</b>，锁定比例、图层顺序与 HUD 布局；最终质感以素材为准 · 应用名与包名（<code>tech.illusion.overwinter</code>）为提案，可改</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var W=1040,H=580,TAU=6.28318;
+var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+var A=/*__ASSETS__*/{};
+var IMG={},scenes=[],ready=false;
+
+/* ---------- world ---------- */
+var SPACING=330,GAP=206,COL=76,ICE=12,GROUND=520;
+function gapCenter(i){return 268+Math.sin(i*0.87+1.2)*68;}
+function pathY(wx){
+  var f=wx/SPACING,i=Math.floor(f),t=f-i;
+  var a=gapCenter(i),b=gapCenter(i+1),u=t*t*(3-2*t);
+  return a+(b-a)*u;
+}
+function rnd(i,s){var x=Math.sin(i*127.1+s*311.7)*43758.5453;return x-Math.floor(x);}
+function cold(temp){var w=Math.min(1,Math.max(0,(temp-12)/62));return 1-w*w*(3-2*w);}
+
+/* ---------- 五档氛围 ---------- */
+var MOODS=["mtn_0","mtn_1","mtn_2","mtn_3","mtn_4"];
+function mood(temp){
+  var f=(1-Math.min(1,Math.max(0,temp/100)))*(MOODS.length-1);
+  var i=Math.min(MOODS.length-2,Math.floor(f));
+  return [IMG[MOODS[i]],IMG[MOODS[i+1]],f-i];
+}
+function tileMirror(c,img,off,dy,dh,sy,sh){
+  var w=img.width*(dh/sh);
+  var j0=Math.floor(off/w),j1=Math.ceil((off+W)/w);
+  for(var j=j0;j<=j1;j++){
+    c.save();
+    if(((j%2)+2)%2){c.translate(j*w-off+w,dy);c.scale(-1,1);}
+    else c.translate(j*w-off,dy);
+    c.drawImage(img,0,sy,img.width,sh,0,0,w,dh);
+    c.restore();
+  }
+}
+var BGH=820, BGY=-186;
+function background(c,temp,s,k){
+  var m=mood(temp);
+  tileMirror(c,m[0],s*0.10,BGY,BGH,0,m[0].height);
+  if(m[2]>0.002){c.globalAlpha=m[2];tileMirror(c,m[1],s*0.10,BGY,BGH,0,m[1].height);c.globalAlpha=1;}
+  // 大气雾：把远景推远，同时给深色枝干让出对比
+  c.fillStyle=k<0.5?"rgba(233,241,248,"+(0.30-k*0.30).toFixed(3)+")"
+                   :"rgba(26,40,62,"+((k-0.5)*0.34).toFixed(3)+")";
+  c.fillRect(0,0,W,H);
+}
+
+/* ---------- 障碍 ---------- */
+function icicles(c,x,capY){
+  for(var k=0;k<5;k++){
+    var ix=x-COL/2+8+((COL-16)/4)*k;
+    var len=(k===2)?ICE:(ICE-rnd(k,x*0.07)*2.6),w=3.2;
+    var g=c.createLinearGradient(ix,capY-ICE-2,ix,capY+len);
+    g.addColorStop(0,"rgba(206,228,244,.35)");
+    g.addColorStop(.45,"rgba(228,242,252,.92)");
+    g.addColorStop(1,"rgba(255,255,255,.42)");
+    c.fillStyle=g;
+    c.beginPath();c.moveTo(ix-w,capY-4);c.lineTo(ix+w,capY-4);
+    c.quadraticCurveTo(ix+w*.34,capY+len*.7,ix,capY+len);
+    c.quadraticCurveTo(ix-w*.34,capY+len*.7,ix-w,capY-4);c.closePath();c.fill();
+  }
+}
+var SAFE=30;   // 收集物中心到判定线的最小距离（小鸟半高 21 + 余量）
+function stem(c,x,y0,y1,sway){
+  c.strokeStyle="rgba(86,68,48,.72)";c.lineWidth=2.2;c.lineCap="round";
+  c.beginPath();c.moveTo(x,y0);
+  c.quadraticCurveTo(x+sway,(y0+y1)/2,x,y1);c.stroke();
+}
+function berryAt(c,x,gt,gb,cy,name,t,dir){
+  var img=IMG[name],w=46,h=img.height*(w/img.width);
+  stem(c,x,dir>0?gt+2:gb-2,cy-dir*h*0.34,dir*6);
+  var g=c.createRadialGradient(x,cy,3,x,cy,40);           // 暖辉光：这是命
+  var a=0.16+0.06*Math.sin(t*2.6+x*0.01);
+  g.addColorStop(0,"rgba(255,124,104,"+a.toFixed(3)+")");
+  g.addColorStop(1,"rgba(255,124,104,0)");
+  c.fillStyle=g;c.fillRect(x-46,cy-46,92,92);
+  c.drawImage(img,x-w/2,cy-h*0.52,w,h);
+}
+function bloomAt(c,x,line,dir,name){                       // dir=+1 贴上沿, -1 贴下沿
+  var img=IMG[name],w=36,h=img.height*(w/img.width),cy=line+dir*SAFE;
+  stem(c,x,line+dir*4,cy-dir*h*0.26,dir*5);
+  c.drawImage(img,x-w/2,cy-h/2,w,h);                       // 无辉光：这是奢侈品
+}
+function obstacles(c,s,t){
+  var img=IMG.trunk_tall,hh=img.height*(COL/img.width);
+  var i0=Math.floor((s-260)/SPACING),i1=Math.ceil((s+W+260)/SPACING);
+  for(var i=i0;i<=i1;i++){
+    var x=i*SPACING-s;if(x<-260||x>W+260)continue;
+    var gc=gapCenter(i),gt=gc-GAP/2,gb=gc+GAP/2,capY=gt-ICE;
+    c.save();c.translate(x,capY);c.scale(1,-1);
+    c.drawImage(img,-COL/2,0,COL,hh);c.restore();
+    icicles(c,x,capY);
+    c.drawImage(img,x-COL/2,gb,COL,hh);
+  }
+}
+function pickups(c,s,t){   // 收集物不参与低温染色：它们要一直是画面里最扎眼的
+  var i0=Math.floor((s-260)/SPACING),i1=Math.ceil((s+W+260)/SPACING);
+  for(var i=i0;i<=i1;i++){
+    var x=i*SPACING-s;if(x<-260||x>W+260)continue;
+    var gc=gapCenter(i),gt=gc-GAP/2,gb=gc+GAP/2;
+    var m=((i%2)+2)%2, m3=((i%3)+3)%3, m7=((i%7)+7)%7;
+    if(m===0)berryAt(c,x+1,gt,gb,gc+(m3===1?-18:18),"berry_"+"abc"[Math.abs(i)%3],t,m3===2?-1:1);
+    if(m7===2)bloomAt(c,x+1,m===0?gb:gt,m===0?-1:1,i%2?"bloom_a":"bloom_b");   // 约每 7 组一朵
+  }
+}
+
+/* ---------- 小鸟：机身 + 单翅 ---------- */
+var K=86/138, ANCH=[142,126], PIV=[128,104];   // 机身中心 / 肩点（padding 后画布坐标）
+// 非对称拍打：下扑快（30% 周期走完 92°），回收慢
+function flapAngle(ph){
+  ph=ph-Math.floor(ph);
+  if(ph<0.30){var u=ph/0.30;return 0.28-1.58*u*u;}
+  var v=(ph-0.30)/0.70;return -1.30+1.58*(1-Math.pow(1-v,2.4));
+}
+function bird(c,x,y,rot,wingA,glowT){
+  var b=IMG.bird_body,wg=IMG.bird_wing;
+  var w=b.width*K,h=b.height*K,ox=-ANCH[0]*K,oy=-ANCH[1]*K;
+  var pvx=ox+PIV[0]*K,pvy=oy+PIV[1]*K;
+  c.save();c.translate(x,y);
+  if(glowT!==undefined){                                   // 无敌：暖白光晕（加色）
+    var pl=0.84+0.16*Math.sin(glowT*7);
+    c.save();c.globalCompositeOperation="lighter";
+    var g=c.createRadialGradient(0,0,4,0,0,86*pl);
+    g.addColorStop(0,"rgba(255,246,214,.92)");
+    g.addColorStop(.32,"rgba(255,228,168,.40)");
+    g.addColorStop(1,"rgba(255,224,160,0)");
+    c.fillStyle=g;c.fillRect(-96,-96,192,192);
+    c.restore();
+  }
+  c.rotate(rot);
+  c.save();c.shadowColor="rgba(24,42,64,.26)";c.shadowBlur=14;c.shadowOffsetY=6;
+  c.drawImage(b,ox,oy,w,h);c.restore();
+  c.save();c.translate(pvx,pvy);c.rotate(wingA);c.translate(-pvx,-pvy);
+  c.drawImage(wg,ox,oy,w,h);c.restore();
+  c.restore();
+}
+function birdTrail(c,x,y,rot,wingA,t){                     // 无敌残影
+  for(var i=3;i>=1;i--){
+    c.globalAlpha=0.34*(4-i)/4;
+    bird(c,x-i*34,y+Math.sin(t*2.1-i*0.55)*6,rot*0.7,wingA+i*0.20);
+  }
+  c.globalAlpha=1;
+}
+
+function snowBurst(c,x,y,t){
+  c.save();
+  var fl=0.5+0.5*Math.sin(t*9);
+  var fg=c.createRadialGradient(x,y,2,x,y,54);            // 接触点白闪
+  fg.addColorStop(0,"rgba(255,255,255,"+(0.5*fl+0.3).toFixed(3)+")");
+  fg.addColorStop(1,"rgba(255,255,255,0)");
+  c.fillStyle=fg;c.fillRect(x-60,y-60,120,120);
+  for(var i=0;i<26;i++){
+    var a=rnd(i,3.1)*TAU, r=8+((t*54+rnd(i,7.3)*92)%92);
+    var al=Math.max(0,1-r/98);
+    c.globalAlpha=al*0.92;
+    c.fillStyle="#FFFFFF";
+    var px=x+Math.cos(a)*r*1.7, py=y+Math.sin(a)*r*0.9, rr=1.8+rnd(i,9.9)*3.2;
+    c.beginPath();c.arc(px,py,rr,0,TAU);c.fill();
+    c.globalAlpha=al*0.35;c.fillStyle="#9FC0D8";
+    c.beginPath();c.arc(px+rr*0.5,py+rr*0.5,rr*0.7,0,TAU);c.fill();
+  }
+  c.restore();c.globalAlpha=1;
+}
+/* ---------- 覆盖层 ---------- */
+function flakes(c,st,t,k){
+  var n=Math.round(50+k*140);
+  for(var i=0;i<n;i++){
+    var f=st.flk[i];
+    c.globalAlpha=f.a*(.5+.5*(1-k*.4));
+    c.fillStyle="#fff";
+    c.beginPath();c.arc(f.x+Math.sin(t*1.3+f.ph)*7,f.y,f.r,0,TAU);c.fill();
+  }
+  c.globalAlpha=1;
+}
+function frost(c,k){
+  if(k<=0.42)return;
+  var q=(k-0.42)/0.58,cor=[[0,0],[W,0],[0,H],[W,H]],i;
+  for(i=0;i<4;i++){
+    var g=c.createRadialGradient(cor[i][0],cor[i][1],8,cor[i][0],cor[i][1],330);
+    g.addColorStop(0,"rgba(216,238,252,"+(.42*q).toFixed(3)+")");
+    g.addColorStop(.55,"rgba(216,238,252,"+(.11*q).toFixed(3)+")");
+    g.addColorStop(1,"rgba(216,238,252,0)");
+    c.fillStyle=g;c.fillRect(0,0,W,H);
+  }
+  c.strokeStyle="rgba(240,250,255,"+(.34*q).toFixed(3)+")";c.lineWidth=1.2;c.lineCap="round";
+  for(i=0;i<4;i++){
+    var cx=cor[i][0],cy=cor[i][1],sx=cx===0?1:-1,sy=cy===0?1:-1;
+    for(var j=0;j<7;j++){
+      var a=(j/6)*(Math.PI/2),L=50+rnd(j,cx+cy+1)*150;
+      c.beginPath();c.moveTo(cx+sx*6,cy+sy*6);
+      c.lineTo(cx+sx*Math.cos(a)*L,cy+sy*Math.sin(a)*L);c.stroke();
+      for(var b=1;b<=2;b++){
+        var u=b/3,bx=cx+sx*Math.cos(a)*L*u,by=cy+sy*Math.sin(a)*L*u,bl=8+rnd(j*3+b,cx+2)*12;
+        c.beginPath();c.moveTo(bx,by);
+        c.lineTo(bx+sx*Math.cos(a-.6)*bl,by+sy*Math.sin(a-.6)*bl);c.stroke();
+        c.beginPath();c.moveTo(bx,by);
+        c.lineTo(bx+sx*Math.cos(a+.6)*bl,by+sy*Math.sin(a+.6)*bl);c.stroke();
+      }
+    }
+  }
+}
+function grain(c){
+  var g=IMG.grain;if(!g||!g.width)return;
+  c.save();c.globalCompositeOperation="overlay";c.globalAlpha=.62;
+  for(var i=0;i*g.width<W+g.width;i++)
+    for(var j=0;j*g.height<H+g.height;j++)c.drawImage(g,i*g.width,j*g.height);
+  c.restore();
+}
+
+/* ---------- 场景 ---------- */
+var CFG={
+  start:{temp:100,speed:52, bx:172},
+  warm :{temp:68, speed:132,bx:300},
+  invin:{temp:30, speed:0,  bx:300,by:100,fixed:360,invin:true},
+  cold :{temp:18, speed:150,bx:300},
+  over :{temp:6,  speed:0,  bx:236,fixed:200,over:true},
+  spec :{temp:74, speed:0,  bx:300,fixed:180,still:true},
+  parts:{temp:88, speed:0,  parts:true}
+};
+
+function drawParts(c,t){
+  var bg=c.createLinearGradient(0,0,0,330);
+  bg.addColorStop(0,"#F4EFE4");bg.addColorStop(1,"#E8E2D4");
+  c.fillStyle=bg;c.fillRect(0,0,W,330);
+  var i,img,w,h;
+  var ph=[0.02,0.16,0.30,0.62];
+  for(i=0;i<4;i++)bird(c,86+i*118,148,0,flapAngle(ph[i]));
+  img=IMG.berry_b;w=74;h=img.height*(w/img.width);c.drawImage(img,600-w/2,148-h/2,w,h);
+  img=IMG.bloom_a;w=74;h=img.height*(w/img.width);c.drawImage(img,730-w/2,148-h/2,w,h);
+  img=IMG.trunk_tall;w=58;
+  c.drawImage(img,0,0,img.width,Math.round(img.height*0.66),
+              900-w/2,44,w,img.height*0.66*(w/img.width));
+  grain(c);
+}
+
+function draw(st,t){
+  if(!ready)return;
+  var c=st.ctx,cfg=st.cfg,oc=st.octx;
+  c.setTransform(st.dpr,0,0,st.dpr,0,0);
+  if(cfg.parts){drawParts(c,t);return;}
+  var s=(cfg.fixed!==undefined)?cfg.fixed:st.scroll, k=cold(cfg.temp);
+  background(c,cfg.temp,s,k);
+
+  oc.setTransform(st.dpr,0,0,st.dpr,0,0);
+  oc.clearRect(0,0,W,H);
+  obstacles(oc,s,t);
+  if(k>0.01){
+    oc.globalCompositeOperation="source-atop";
+    oc.fillStyle="rgba(40,58,84,"+(k*0.42).toFixed(3)+")";
+    oc.fillRect(0,0,W,H);
+    oc.globalCompositeOperation="source-over";
+  }
+  c.drawImage(st.off,0,0,W,H);
+  pickups(c,s,t);
+  if(cfg.over){bird(c,cfg.bx,GROUND+2,2.3,-0.9);}
+  else if(cfg.invin){
+    var wa=flapAngle(t*1.9);
+    birdTrail(c,cfg.bx,cfg.by,-0.10,wa,t);
+    snowBurst(c,cfg.bx+16,cfg.by+4,t);
+    bird(c,cfg.bx,cfg.by,-0.10,wa,t);
+  }
+  else{
+    var y=pathY(s+cfg.bx)+Math.sin(t*2.1)*11;
+    var y2=pathY(s+cfg.bx+44)+Math.sin((t+.3)*2.1)*11;
+    var slope=y2-y;
+    st.rise=Math.max(0,-slope);
+    var rot=(cfg.speed>0)?Math.max(-.36,Math.min(.58,slope*.026)):0;
+    var wa=cfg.still?-0.62:flapAngle(st.fp||0);
+    if(!cfg.still){var gl=0.02,mx=Math.max(0.30,Math.min(1,st.rise*0.11));wa=gl+(wa-gl)*mx;}
+    bird(c,cfg.bx,y,rot,wa);
+  }
+
+  flakes(c,st,t,k);frost(c,cfg.invin?k*0.38:k);grain(c);
+  if(cfg.over){c.fillStyle="rgba(12,20,32,.40)";c.fillRect(0,0,W,H);}
+}
+
+/* ---------- boot ---------- */
+Array.prototype.forEach.call(document.querySelectorAll(".fit"),function(fit){
+  var cfg=CFG[fit.getAttribute("data-scene")];
+  var cv=fit.querySelector("canvas"),ui=fit.querySelector(".ui");
+  var h=cfg.parts?330:H,dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(h*dpr);
+  var off=document.createElement("canvas");
+  off.width=Math.round(W*dpr);off.height=Math.round(h*dpr);
+  var flk=[];
+  for(var i=0;i<200;i++)flk.push({x:rnd(i,1.1)*W,y:rnd(i,2.2)*h,r:.9+rnd(i,3.3)*2.2,
+    v:16+rnd(i,4.4)*46,a:.3+rnd(i,5.5)*.6,ph:rnd(i,6.6)*6.28});
+  var st={ctx:cv.getContext("2d"),octx:off.getContext("2d"),off:off,cfg:cfg,dpr:dpr,
+          scroll:(cfg.fixed!==undefined?cfg.fixed:0),flk:flk,h:h,vis:true,fp:0,rise:0};
+  scenes.push(st);
+  new ResizeObserver(function(e){
+    ui.style.setProperty("--k",(e[0].contentRect.width/W).toFixed(5));
+  }).observe(fit);
+  new IntersectionObserver(function(e){st.vis=e[0].isIntersecting;},{rootMargin:"200px"}).observe(fit);
+  ui.style.setProperty("--k",(fit.getBoundingClientRect().width/W).toFixed(5));
+});
+
+var keys=Object.keys(A),pending=keys.length;
+if(!pending){ready=true;}
+keys.forEach(function(kk){
+  var im=new Image();
+  im.onload=im.onerror=function(){if(--pending===0)go();};
+  im.src=A[kk];IMG[kk]=im;
+});
+function go(){
+  ready=true;
+  for(var n=0;n<scenes.length;n++)draw(scenes[n],0);
+  if(reduce)return;
+  var last=performance.now();
+  requestAnimationFrame(function loop(now){
+    var dt=Math.min(.05,(now-last)/1000);last=now;
+    for(var n=0;n<scenes.length;n++){
+      var st=scenes[n];if(!st.vis)continue;
+      var t=st.cfg.still?0:now/1000;
+      if(!st.cfg.still){
+        st.scroll+=st.cfg.speed*dt;
+        st.fp=(st.fp||0)+dt*(1.75+(st.rise||0)*0.055);
+        var k=cold(st.cfg.temp);
+        for(var i=0;i<st.flk.length;i++){
+          var f=st.flk[i];
+          f.y+=f.v*dt*(1+k*1.5);f.x-=(8+f.v*.12)*dt;
+          if(f.y>st.h+4){f.y=-4;f.x=rnd(f.ph*97,1.9)*W;}
+          if(f.x<-6)f.x=W+6;
+        }
+      }
+      draw(st,t);
+    }
+    requestAnimationFrame(loop);
+  });
+}
+})();
+</script>

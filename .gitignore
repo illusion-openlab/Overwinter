@@ -1,0 +1,48 @@
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Log/OS Files
+*.log
+.DS_Store
+
+# Android Studio generated files and folders
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+output.json
+
+# IntelliJ
+*.iml
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services (e.g. APIs or Firebase)
+google-services.json
+
+# Android Profiling
+*.hprof
+
+# ── 本项目补充 ──
+
+# Kotlin 构建缓存
+.kotlin/
+
+# 上机验证截图：每轮 5 张、每张约 4MB，是可重新生成的调试证据。
+# 结论与差异清单记在 .spatialsdk/ui-verification-log.md 里，那个要进仓库。
+# 重新生成：bash .spatialsdk/tools/verify-ui.sh <轮次>
+.spatialsdk/ui-verify/*.png
+
+# 抠图管线的中间产物，由 design-ref/ 里的参考图重新生成
+.spatialsdk/design-ref/_keyed.png
+.spatialsdk/design-ref/_comps.json
