@@ -24,10 +24,7 @@ import com.pico.spatial.ui.design.HorizontalDivider
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.Text
 import com.pico.spatial.ui.design.windows.BasicSheet
-import com.pico.spatial.ui.foundation.haptic.controllerHapticFeedback
-import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
 import com.pico.spatial.ui.foundation.material.backgroundMaterial
-import com.pico.spatial.ui.graphics.SpatialHoverStyle
 import com.pico.spatial.ui.platform.Material
 
 /**
@@ -110,9 +107,7 @@ fun StartCard(best: Int, onStart: () -> Unit) = Scrim {
             onClick = onStart,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 22.dp)
-                .spatialHoverEffect(SpatialHoverStyle.Highlight)
-                .controllerHapticFeedback(),
+                .padding(top = 22.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PicoTheme.colorScheme.fillPrimary,
                 contentColor = PicoTheme.colorScheme.labelPrimaryLight,
@@ -168,9 +163,7 @@ fun ResultCard(
             onClick = onRetry,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 22.dp)
-                .spatialHoverEffect(SpatialHoverStyle.Highlight)
-                .controllerHapticFeedback(),
+                .padding(top = 22.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PicoTheme.colorScheme.fillPrimary,
                 contentColor = PicoTheme.colorScheme.labelPrimaryLight,
@@ -182,9 +175,7 @@ fun ResultCard(
             onClick = onHome,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 10.dp)
-                .spatialHoverEffect(SpatialHoverStyle.Highlight)
-                .controllerHapticFeedback(),
+                .padding(top = 10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PicoTheme.colorScheme.fillLight),
         ) {
             Text(text = "回到开始页", style = PicoTheme.typography.labelLarge)
