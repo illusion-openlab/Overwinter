@@ -65,6 +65,7 @@ fun HomePage() {
         var last = System.nanoTime()
         var lastFlap = engine.flapEvents
         var lastPickup = engine.pickupEvents
+        var lastHit = engine.hitEvents
         while (isActive) {
             delay(11L)                                   // ~90Hz 上限，实际由调度决定
             val now = System.nanoTime()
@@ -80,6 +81,7 @@ fun HomePage() {
 
             if (engine.flapEvents != lastFlap) { lastFlap = engine.flapEvents; audio.flap() }
             if (engine.pickupEvents != lastPickup) { lastPickup = engine.pickupEvents; audio.pickup() }
+            if (engine.hitEvents != lastHit) { lastHit = engine.hitEvents; audio.hit() }
             if (phase != Phase.GameOver && engine.phase == Phase.GameOver) audio.gameOver()
 
             phase = engine.phase

@@ -82,8 +82,11 @@ Main.kt                 DefaultWindowContainer { PicoTheme { HomePage() } }
   `androidResources { noCompress += listOf("wav","mp3") }`。压缩了 `assets.openFd()` 就拿不到
   可用的 `AssetFileDescriptor`，运行时抛异常。改动后用
   `unzip -lv <apk> | grep assets/audio` 确认是 `Stored / 0%`
-- `flap.wav` 是从用户给的 `飞翔.mp3` 里**切出的单次振翅**（原文件是三次连续振翅共 2.4s，
-  整段播放会听到三下、连点还会糊成一片）。换素材时记得也只取单次
+- 五个音：`flap.wav` 扇翅 / `pickup.mp3` 收集 / `hit.wav` 撞枝 / `fall.mp3` 结算 / `wind.mp3` 循环环境音
+- **两个音是裁过的，换素材时要照做**：
+  `flap.wav` 取自 `飞翔.mp3` 的单次振翅（原文件是三次连续振翅共 2.4s，整段播会听到三下、连点糊成一片）；
+  `hit.wav` 裁掉了 `撞击.mp3` 前面 0.151s 的静音（碰撞反馈慢半拍会和画面脱节，裁后起音 0.026s）。
+  换素材前先量一下起音延迟和是不是单次事件
 - 引擎只暴露 `flapEvents` / `pickupEvents` 两个**纯计数器**，表现层比对上一帧判边沿——
   这样引擎依旧不含 Android 类型，JUnit 照跑
 - 音效**截图判不出来**。验证靠 `adb shell dumpsys audio` 看有没有本应用的活跃播放器，
@@ -138,7 +141,6 @@ adb -s emulator-5554 shell am start -S \
 ## 下一步
 
 1. **真机扫一遍射线**：确认「开始飞行」按钮点得到、覆盖层不穿透。这是目前唯一一类还没有任何证据的问题——静态截图和单测都判不出来
-2. **补撞枝音效**：撞枝 −25° 目前完全无声，是本作最重要的负反馈却没有听觉提示（契约 §5b 已记为已知缺口）
-3. 最高分持久化（目前只在内存里）
+2. **最高分持久化**：目前只在内存里，退出就没了
 4. 素材到位后按 `asset-manifest.md` 替换，并跑 `.spatialsdk/tools/validate-assets.py`
 5. V2：花朵无敌态

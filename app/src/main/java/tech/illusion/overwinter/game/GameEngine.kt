@@ -84,6 +84,7 @@ class GameEngine {
     /** 音效用的纯计数器：只增不减，表现层比对上一帧的值来判边沿。引擎不认识音频。 */
     var flapEvents = 0; private set
     var pickupEvents = 0; private set
+    var hitEvents = 0; private set
 
     var hurt = 0f; private set          // 撞击硬直剩余秒数，>0 时闪烁且不再扣血
     /** 仅供 DEBUG 截图验证：冻结物理但保留动画时钟 */
@@ -110,7 +111,7 @@ class GameEngine {
         temp = TEMP_MAX; score = 0; berries = 0; blooms = 0
         elapsed = 0f; branchesPassed = 0
         birdY = 290f; birdVy = 0f; scroll = 0f; hurt = 0f
-        flapEvents = 0; pickupEvents = 0
+        flapEvents = 0; pickupEvents = 0; hitEvents = 0
         lastRunWasRecord = false; frozen = false      // 否则 DEBUG 启动后按「再飞一次」会一直卡在冻结态
         obstacles.clear(); nextIndex = 0; lastGc = 268f
         // 预铺满一屏，NotStarted 时背后就有景可看
@@ -198,6 +199,7 @@ class GameEngine {
                 if (hitTop || hitBottom) {
                     temp -= TEMP_HIT
                     hurt = HURT_TIME
+                    hitEvents++
                     birdVy = min(birdVy, 0f)
                 }
             }
@@ -233,6 +235,9 @@ class GameEngine {
         score = passed + picked * BLOOM_SCORE
         frozen = freeze
     }
+
+    /** 仅测试用：把小鸟放到指定高度 */
+    internal fun debugPutBird(y: Float) { birdY = y; birdVy = 0f }
 
     internal fun debugEnd(seconds: Float) {
         frozen = false

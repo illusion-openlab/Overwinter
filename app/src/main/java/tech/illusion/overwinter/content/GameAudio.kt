@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.LocalContext
  *               原文件是**三次连续振翅**共 2.4s，每次点击播完整段会听到三下，
  *               连点还会糊成一片，所以只取单次。
  *   pickup.mp3 ← 欢喜.mp3   吃到浆果或花朵，两者共用一个音
+ *   hit.wav    ← 撞击.mp3 裁掉头尾（0.125s~0.800s）。原文件**起音前有 0.151s 静音**，
+ *               碰撞反馈慢半拍会明显和画面脱节；裁后起音 0.026s
  *   fall.mp3   ← 坠落.mp3   进入结算态
  *   wind.mp3   ← 风声.mp3   19s 循环环境音
  */
@@ -30,6 +32,7 @@ class GameAudio private constructor(ctx: Context) {
     private val pool = SoundPool.Builder().setMaxStreams(6).setAudioAttributes(attrs).build()
     private val flapId = load(ctx, "audio/flap.wav")
     private val pickupId = load(ctx, "audio/pickup.mp3")
+    private val hitId = load(ctx, "audio/hit.wav")
     private val fallId = load(ctx, "audio/fall.mp3")
 
     private var flapStream = 0
@@ -47,6 +50,9 @@ class GameAudio private constructor(ctx: Context) {
     }
 
     fun pickup() { if (!released) pool.play(pickupId, 1f, 1f, 1, 0, 1f) }
+
+    /** 撞枝。引擎有 0.8s 硬直，天然不会连发，不需要掐上一声。 */
+    fun hit() { if (!released) pool.play(hitId, 1f, 1f, 2, 0, 1f) }
 
     fun gameOver() { if (!released) pool.play(fallId, 1f, 1f, 1, 0, 1f) }
 

@@ -170,6 +170,18 @@ class GameEngineTest {
         assertTrue("吃到后体温应回升", e.temp > t0)
     }
 
+    @Test fun `hitting a branch raises hitEvents once per collision`() {
+        val e = playing()
+        e.debugPlace(scrollTo = FIRST_X - BIRD_X, temperature = 100f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        val o = e.obstacles.minByOrNull { kotlin.math.abs(it.worldX - e.scroll - BIRD_X) }!!
+        e.debugPutBird(o.gapTop - 40f)          // 缝隙上沿再往上 = 塞进树干实体里
+        e.update(1f / 90f)
+        assertEquals("撞上应记一次", 1, e.hitEvents)
+        repeat(20) { e.update(1f / 90f) }       // 0.8s 硬直期间不该重复计数
+        assertEquals("硬直期间不应重复计数", 1, e.hitEvents)
+    }
+
     @Test fun `reset clears the audio event counters`() {
         val e = GameEngine()
         e.flap(); e.flap()
@@ -177,6 +189,7 @@ class GameEngineTest {
         e.reset()
         assertEquals(0, e.flapEvents)
         assertEquals(0, e.pickupEvents)
+        assertEquals(0, e.hitEvents)
     }
 
     @Test fun `reset clears run state but keeps best`() {
