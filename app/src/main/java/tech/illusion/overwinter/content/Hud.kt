@@ -20,6 +20,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.unit.dp
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.Text
@@ -32,14 +34,56 @@ private val TEMP_COLD = Color(0xFF63A9DE)
 
 /** 契约 §2：体温胶囊 + 得分胶囊，压在画面最上一条 */
 @Composable
-fun Hud(temp: Float, score: Int, best: Int, modifier: Modifier = Modifier) {
+fun Hud(temp: Float, score: Int, best: Int, invincible: Float, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.fillMaxWidth().padding(start = 26.dp, end = 26.dp, top = 22.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top,
     ) {
-        TempChip(temp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TempChip(temp)
+            // 只在无敌期间出现，其余时刻不占位（隐藏，不是灰态）
+            if (invincible > 0f) {
+                Box(Modifier.padding(start = 11.dp)) { InvinChip(invincible) }
+            }
+        }
         ScoreChip(score, best)
+    }
+}
+
+/** 吃到花朵后的 3 秒无敌：倒计时环 + 剩余秒数 */
+@Composable
+private fun InvinChip(remain: Float) {
+    val ring = PicoTheme.colorScheme.labelPrimary
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .backgroundMaterial(true, Material.Thin)
+            .background(GlassScrim)
+            .padding(start = 9.dp, end = 16.dp, top = 7.dp, bottom = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Canvas(Modifier.size(30.dp)) {
+            val w = size.width
+            val sw = w * 0.11f
+            drawCircle(ring.copy(alpha = 0.20f), w / 2 - sw / 2, style = Stroke(sw))
+            drawArc(
+                color = ring,
+                startAngle = -90f,
+                sweepAngle = 360f * (remain / 3f).coerceIn(0f, 1f),
+                useCenter = false,
+                style = Stroke(sw, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+                topLeft = androidx.compose.ui.geometry.Offset(sw / 2, sw / 2),
+                size = androidx.compose.ui.geometry.Size(w - sw, w - sw),
+            )
+            drawCircle(ring.copy(alpha = 0.9f), w * 0.15f)
+        }
+        Text(
+            text = String.format("%.1fs", remain),
+            modifier = Modifier.padding(start = 9.dp),
+            color = PicoTheme.colorScheme.labelPrimary,
+            style = PicoTheme.typography.bodyMedium,
+        )
     }
 }
 

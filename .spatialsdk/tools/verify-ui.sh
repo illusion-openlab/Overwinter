@@ -54,6 +54,7 @@ shoot() {   # $1=状态名 $2=ow_debug 值（空=默认） $3=就位后额外等
 shoot start ""     8      # 首次启动要解码 18 张 PNG，给足预算
 shoot cold  cold   6
 shoot over  over   6
+shoot invin invin  6
 
 # live 档走真实路径：停在开始页 -> 2.5s 自动开局 -> 自动扇翅。
 # 一次启动拍两张，验证 NotStarted->Playing 和 Playing->GameOver 两次重组。

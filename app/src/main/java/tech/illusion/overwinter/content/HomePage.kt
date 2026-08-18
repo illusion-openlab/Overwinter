@@ -58,6 +58,7 @@ fun HomePage() {
     var tempShown by remember { mutableIntStateOf(engine.temp.roundToInt()) }
     var scoreShown by remember { mutableIntStateOf(engine.score) }
     var bestShown by remember { mutableIntStateOf(engine.best) }
+    var invinShown by remember { mutableFloatStateOf(engine.invincible) }
 
     // 主循环用 delay 驱动，不用 withFrameNanos。
     // 实测：在 DefaultWindowContainer 里 withFrameNanos 不会恢复，协程停在第一次挂起，
@@ -91,6 +92,8 @@ fun HomePage() {
             tempShown = engine.temp.roundToInt()
             scoreShown = engine.score
             bestShown = engine.best
+            // 量化到 0.1s，避免每帧都重组 HUD
+            invinShown = kotlin.math.ceil(engine.invincible * 10f) / 10f
         }
     }
 
@@ -118,6 +121,7 @@ fun HomePage() {
                 temp = tempShown.toFloat(),
                 score = scoreShown,
                 best = bestShown,
+                invincible = invinShown,
                 modifier = Modifier.fillMaxSize(),
             )
             Phase.GameOver -> ResultCard(

@@ -182,6 +182,79 @@ class GameEngineTest {
         assertEquals("硬直期间不应重复计数", 1, e.hitEvents)
     }
 
+    @Test fun `picking a bloom grants three seconds of invincibility`() {
+        val e = playing()
+        val o = e.obstacles.first { it.hasBloom }
+        e.debugPlace(scrollTo = o.worldX - BIRD_X, temperature = 80f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        e.debugPutBird(o.bloomY)
+        e.update(1f / 90f)
+        assertTrue("应采到花朵", e.blooms > 0)
+        assertEquals("应获得 3 秒无敌", 3f, e.invincible, 0.05f)
+    }
+
+    @Test fun `invincibility blocks branch damage but not the cold`() {
+        val e = playing()
+        val o = e.obstacles.first { it.hasBloom }
+        e.debugPlace(scrollTo = o.worldX - BIRD_X, temperature = 80f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        e.debugPutBird(o.bloomY)
+        e.update(1f / 90f)
+        val tempAfterPick = e.temp
+        val hitsBefore = e.hitEvents
+
+        // 场景每帧都在滚，所以塞进树干后必须**立刻**断言，晚一点障碍就移开了
+        e.debugPutBird(o.gapTop - 40f)
+        e.update(1f / 90f)
+        assertTrue("穿过枝干时应给表现层信号", e.passingThrough)
+        assertEquals("无敌期间撞枝不应扣血", hitsBefore, e.hitEvents)
+        assertTrue("仍在无敌中", e.invincible > 0f)
+
+        // 体温单独看：挪到两组枝干正中间，那里没有收集物，不会被回温干扰
+        e.debugPlace(scrollTo = o.worldX - BIRD_X + SPACING / 2f, temperature = 80f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        val t0 = e.temp
+        repeat(90) { e.update(1f / 90f) }
+        assertTrue("无敌不保暖，体温照常流失", e.temp < t0)
+    }
+
+    @Test fun `invincibility expires and damage resumes`() {
+        val e = playing()
+        val o = e.obstacles.first { it.hasBloom }
+        e.debugPlace(scrollTo = o.worldX - BIRD_X, temperature = 90f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        e.debugPutBird(o.bloomY)
+        e.update(1f / 90f)
+        assertTrue(e.invincible > 0f)
+
+        // 整整 3 秒都按在 y=60（那一带只有树干、没有收集物），每帧重设高度抵消重力。
+        // 顺带验证：无敌期间一直嵌在树干里也一次血都不掉。
+        repeat(300) { e.debugPutBird(60f); e.update(1f / 90f) }
+        assertEquals("无敌应已耗尽", 0f, e.invincible, 0.001f)
+        assertEquals("无敌期间一直嵌在树干里也不该扣血", 0, e.hitEvents)
+
+        // 再把当前身边的障碍对准小鸟，塞进树干
+        val cur = e.obstacles.minByOrNull { kotlin.math.abs(it.worldX - e.scroll - BIRD_X) }!!
+        e.debugPlace(scrollTo = cur.worldX - BIRD_X, temperature = 90f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        e.debugPutBird(cur.gapTop - 40f)
+        e.update(1f / 90f)
+        assertTrue("失效后撞枝应重新扣血", e.hitEvents > 0)
+    }
+
+    @Test fun `invincibility turns the ground into a floor instead of death`() {
+        val e = playing()
+        val o = e.obstacles.first { it.hasBloom }
+        e.debugPlace(scrollTo = o.worldX - BIRD_X, temperature = 90f,
+                     passed = 0, eaten = 0, picked = 0, freeze = false)
+        e.debugPutBird(o.bloomY)
+        e.update(1f / 90f)
+        e.debugPutBird(GROUND_Y - 10f)             // 塞到地面以下
+        repeat(30) { e.update(1f / 90f) }
+        assertEquals("无敌期间触地不应结束", Phase.Playing, e.phase)
+        assertTrue("应被地面钳住", e.birdY <= GROUND_Y - BIRD_HALF_H + 0.5f)
+    }
+
     @Test fun `reset clears the audio event counters`() {
         val e = GameEngine()
         e.flap(); e.flap()
@@ -190,6 +263,7 @@ class GameEngineTest {
         assertEquals(0, e.flapEvents)
         assertEquals(0, e.pickupEvents)
         assertEquals(0, e.hitEvents)
+        assertEquals(0f, e.invincible, 0.001f)
     }
 
     @Test fun `reset clears run state but keeps best`() {

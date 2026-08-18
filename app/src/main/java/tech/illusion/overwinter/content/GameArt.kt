@@ -48,6 +48,7 @@ object WinterPalette {
     val IcicleTip = Color(0xFFFFFFFF)
     val Stem = Color(0xB35A4430)
     val BerryGlow = Color(0xFFFF7C68)
+    val InvinGlow = Color(0xFFFFF6D6)      // 无敌光晕，暖白
     val HazeWarm = Color(0xFFE9F1F8)
     val HazeCold = Color(0xFF1A283E)
     val Frost = Color(0xFFD4ECFB)
@@ -93,6 +94,7 @@ private const val BIRD_PIVOT_Y = 104f
 private const val BIRD_SRC_BODY_W = 138f     // 原始机身宽，用来换算显示比例
 private const val BIRD_DISPLAY_W = 86f       // 契约 §2b
 
+private const val TAU = 6.28318f
 private const val BG_H = 820f
 private const val BG_Y = -186f
 
@@ -161,7 +163,7 @@ fun DrawScope.drawGame(e: GameEngine, art: Art, t: Float) {
     pickups(p, art, e, t)
     bird(p, art, e, t)
     snow(p, k, t)
-    frost(p, k)
+    frost(p, if (e.invincible > 0f) k * 0.38f else k)
     grain(p, art)
 }
 
@@ -281,6 +283,44 @@ private fun pickups(p: Painter, art: Art, e: GameEngine, t: Float) {
     }
 }
 
+/** 无敌期间穿过枝干时，接触点炸一团雪雾——告诉玩家"穿过去了"而不是"卡住了" */
+private fun snowBurst(p: Painter, x: Float, y: Float, t: Float) {
+    val fl = 0.5f + 0.5f * sin(t * 9f)
+    p.d.drawCircle(
+        Brush.radialGradient(
+            listOf(Color.White.copy(alpha = 0.30f * fl + 0.18f), Color.Transparent),
+            Offset(x * p.s, y * p.s), 54f * p.s
+        ), 54f * p.s, Offset(x * p.s, y * p.s)
+    )
+    for (i in 0 until 20) {
+        val a = rnd(i, 3.1f) * TAU
+        val r = 8f + ((t * 54f + rnd(i, 7.3f) * 92f) % 92f)
+        val al = (1f - r / 98f).coerceAtLeast(0f)
+        p.circle(WinterPalette.Snow, x + kotlin.math.cos(a) * r * 1.7f,
+            y + kotlin.math.sin(a) * r * 0.9f, 1.8f + rnd(i, 9.9f) * 3.2f, al * 0.9f)
+    }
+}
+
+private fun birdBody(p: Painter, art: Art, x: Float, y: Float, rot: Float, wingA: Float, alpha: Float) {
+    val body = art["bird_body"]; val wing = art["bird_wing"]
+    val kk = BIRD_DISPLAY_W / BIRD_SRC_BODY_W
+    val w = body.width * kk; val h = body.height * kk
+    val ox = -BIRD_ANCHOR_X * kk; val oy = -BIRD_ANCHOR_Y * kk
+    val pvx = ox + BIRD_PIVOT_X * kk; val pvy = oy + BIRD_PIVOT_Y * kk
+    p.d.translate(x * p.s, y * p.s) {
+        rotate(Math.toDegrees(rot.toDouble()).toFloat(), Offset.Zero) {
+            drawImage(body, IntOffset.Zero, IntSize(body.width, body.height),
+                IntOffset((ox * p.s).toInt(), (oy * p.s).toInt()),
+                IntSize((w * p.s).toInt(), (h * p.s).toInt()), alpha)
+            rotate(Math.toDegrees(wingA.toDouble()).toFloat(), Offset(pvx * p.s, pvy * p.s)) {
+                drawImage(wing, IntOffset.Zero, IntSize(wing.width, wing.height),
+                    IntOffset((ox * p.s).toInt(), (oy * p.s).toInt()),
+                    IntSize((w * p.s).toInt(), (h * p.s).toInt()), alpha)
+            }
+        }
+    }
+}
+
 private fun bird(p: Painter, art: Art, e: GameEngine, t: Float) {
     if (e.hurt > 0f && (t * 8f).toInt() % 2 == 0) return      // 撞击硬直：8Hz 闪烁
     val body = art["bird_body"]; val wing = art["bird_wing"]
@@ -294,20 +334,29 @@ private fun bird(p: Painter, art: Art, e: GameEngine, t: Float) {
     val beat = flapAngle(t * 1.75f + rise * 0.0016f)
     val mix = (rise * 0.0045f).coerceIn(0.30f, 1f)
     val wingA = glide + (beat - glide) * mix
-    val cx = tech.illusion.overwinter.game.BIRD_X * p.s
-    val cy = e.birdY * p.s
-    p.d.translate(cx, cy) {
-        rotate(Math.toDegrees(rot.toDouble()).toFloat(), Offset.Zero) {
-            drawImage(body, IntOffset.Zero, IntSize(body.width, body.height),
-                IntOffset((ox * p.s).toInt(), (oy * p.s).toInt()),
-                IntSize((w * p.s).toInt(), (h * p.s).toInt()))
-            rotate(Math.toDegrees(wingA.toDouble()).toFloat(), Offset(pvx * p.s, pvy * p.s)) {
-                drawImage(wing, IntOffset.Zero, IntSize(wing.width, wing.height),
-                    IntOffset((ox * p.s).toInt(), (oy * p.s).toInt()),
-                    IntSize((w * p.s).toInt(), (h * p.s).toInt()))
-            }
+    val bx = tech.illusion.overwinter.game.BIRD_X
+
+    if (e.invincible > 0f) {
+        // 穿过枝干的雪雾（在小鸟之下画，让小鸟压在雾上面）
+        if (e.passingThrough) snowBurst(p, bx + 16f, e.birdY + 4f, t)
+        // 余晖：身后三重递减残影
+        for (i in 3 downTo 1) {
+            birdBody(p, art, bx - i * 34f, e.birdY + sin(t * 2.1f - i * 0.55f) * 6f,
+                rot * 0.7f, wingA + i * 0.20f, 0.34f * (4 - i) / 4f)
         }
+        // 暖白光晕，加色混合
+        val pl = 0.84f + 0.16f * sin(t * 7f)
+        p.d.drawCircle(
+            Brush.radialGradient(
+                0f to WinterPalette.InvinGlow.copy(alpha = 0.92f),
+                0.32f to Color(0xFFFFE4A8).copy(alpha = 0.40f),
+                1f to Color.Transparent,
+                center = Offset(bx * p.s, e.birdY * p.s), radius = 86f * pl * p.s
+            ), 86f * pl * p.s, Offset(bx * p.s, e.birdY * p.s), blendMode = BlendMode.Plus
+        )
     }
+
+    birdBody(p, art, bx, e.birdY, rot, wingA, 1f)
 }
 
 private fun fmod(v: Float, m: Float): Float { val r = v % m; return if (r < 0f) r + m else r }

@@ -43,6 +43,7 @@ private const val TEMP_HIT = 25f        // 撞枝
 private const val TEMP_BERRY = 18f      // 吃浆果
 private const val HURT_TIME = 0.8f      // 撞击硬直
 private const val BLOOM_SCORE = 5
+private const val INVIN_TIME = 3f       // 吃到花朵后的无敌秒数
 
 // 缝隙中心范围：上下都留出足够余量，保证两端障碍都看得见
 private const val GC_MIN = 200f
@@ -86,6 +87,11 @@ class GameEngine {
     var pickupEvents = 0; private set
     var hitEvents = 0; private set
 
+    /** 吃到花朵后的无敌剩余秒数。只挡碰撞，不保暖——体温照常流失。 */
+    var invincible = 0f; private set
+    /** 无敌期间正穿过枝干：给表现层画雪雾用。 */
+    var passingThrough = false; private set
+
     var hurt = 0f; private set          // 撞击硬直剩余秒数，>0 时闪烁且不再扣血
     /** 仅供 DEBUG 截图验证：冻结物理但保留动画时钟 */
     var frozen = false; private set
@@ -112,6 +118,7 @@ class GameEngine {
         elapsed = 0f; branchesPassed = 0
         birdY = 290f; birdVy = 0f; scroll = 0f; hurt = 0f
         flapEvents = 0; pickupEvents = 0; hitEvents = 0
+        invincible = 0f; passingThrough = false
         lastRunWasRecord = false; frozen = false      // 否则 DEBUG 启动后按「再飞一次」会一直卡在冻结态
         obstacles.clear(); nextIndex = 0; lastGc = 268f
         // 预铺满一屏，NotStarted 时背后就有景可看
@@ -159,6 +166,7 @@ class GameEngine {
         elapsed += dt
         scroll += scrollSpeed * dt
         if (hurt > 0f) hurt = max(0f, hurt - dt)
+        if (invincible > 0f) invincible = max(0f, invincible - dt)   // 无敌不减缓体温流失
 
         birdVy = min(MAX_FALL, birdVy + GRAVITY * dt)
         birdY += birdVy * dt
@@ -167,12 +175,17 @@ class GameEngine {
         if (birdY < 24f) { birdY = 24f; if (birdVy < 0f) birdVy = 0f }
 
         temp -= TEMP_DRAIN * dt
+        passingThrough = false
         cull()
 
         collide()
 
         // 触地：立即结束，不走扣体温流程（契约 §5）
-        if (birdY + BIRD_HALF_H >= GROUND_Y) { birdY = GROUND_Y - BIRD_HALF_H; die(); return }
+        if (birdY + BIRD_HALF_H >= GROUND_Y) {
+            birdY = GROUND_Y - BIRD_HALF_H
+            if (invincible > 0f) { if (birdVy > 0f) birdVy = 0f }   // 无敌时地面当地板，不判死
+            else { die(); return }
+        }
         if (temp <= 0f) { temp = 0f; die() }
     }
 
@@ -193,14 +206,18 @@ class GameEngine {
             }
 
             val overlapX = abs(ox - bx) < COL_W / 2f + BIRD_HALF_W
-            if (overlapX && hurt <= 0f) {
+            if (overlapX) {
                 val hitTop = birdY - BIRD_HALF_H < o.gapTop
                 val hitBottom = birdY + BIRD_HALF_H > o.gapBottom
                 if (hitTop || hitBottom) {
-                    temp -= TEMP_HIT
-                    hurt = HURT_TIME
-                    hitEvents++
-                    birdVy = min(birdVy, 0f)
+                    if (invincible > 0f) {
+                        passingThrough = true          // 直接穿过去，只给表现层一个信号
+                    } else if (hurt <= 0f) {
+                        temp -= TEMP_HIT
+                        hurt = HURT_TIME
+                        hitEvents++
+                        birdVy = min(birdVy, 0f)
+                    }
                 }
             }
 
@@ -213,6 +230,7 @@ class GameEngine {
             if (o.hasBloom && !o.bloomPicked &&
                 near(bx, birdY, ox, o.bloomY, 30f)) {
                 o.bloomPicked = true; blooms++; score += BLOOM_SCORE; pickupEvents++
+                invincible = INVIN_TIME          // 契约 §5c
             }
         }
     }
@@ -238,6 +256,10 @@ class GameEngine {
 
     /** 仅测试用：把小鸟放到指定高度 */
     internal fun debugPutBird(y: Float) { birdY = y; birdVy = 0f }
+    internal fun debugSetInvincible(sec: Float) { invincible = sec }
+
+    internal fun debugPassThrough() { passingThrough = true }
+    internal fun debugFreeze() { frozen = true }
 
     internal fun debugEnd(seconds: Float) {
         frozen = false
@@ -267,6 +289,16 @@ fun GameEngine.debugForce(state: String) {
             start()
             debugPlace(scrollTo = FIRST_X - BIRD_X + SPACING * 1.6f, temperature = 18f,
                 passed = 12, eaten = 5, picked = 1)
+        }
+        "invin" -> {                                  // 契约 §5c 的整帧：无敌期间穿过枝干
+            start()
+            debugPlace(scrollTo = FIRST_X + SPACING * 2f - BIRD_X, temperature = 30f,
+                passed = 12, eaten = 5, picked = 1, freeze = false)
+            val o = obstacles.minByOrNull { kotlin.math.abs(it.worldX - scroll - BIRD_X) }
+            debugPutBird((o?.gapTop ?: 200f) - 42f)   // 塞进上障碍实体里
+            debugSetInvincible(2.0f)
+            debugPassThrough()
+            debugFreeze()
         }
         "over" -> {
             start()
