@@ -23,7 +23,11 @@ import com.pico.spatial.ui.design.ButtonDefaults
 import com.pico.spatial.ui.design.HorizontalDivider
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.Text
+import com.pico.spatial.ui.design.windows.BasicSheet
+import com.pico.spatial.ui.foundation.haptic.controllerHapticFeedback
+import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
 import com.pico.spatial.ui.foundation.material.backgroundMaterial
+import com.pico.spatial.ui.graphics.SpatialHoverStyle
 import com.pico.spatial.ui.platform.Material
 
 /**
@@ -104,7 +108,11 @@ fun StartCard(best: Int, onStart: () -> Unit) = Scrim {
         }
         Button(
             onClick = onStart,
-            modifier = Modifier.fillMaxWidth().padding(top = 22.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 22.dp)
+                .spatialHoverEffect(SpatialHoverStyle.Highlight)
+                .controllerHapticFeedback(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PicoTheme.colorScheme.fillPrimary,
                 contentColor = PicoTheme.colorScheme.labelPrimaryLight,
@@ -125,7 +133,7 @@ fun StartCard(best: Int, onStart: () -> Unit) = Scrim {
 fun ResultCard(
     score: Int, best: Int, branches: Int, berries: Int, blooms: Int, seconds: Float,
     isRecord: Boolean, onRetry: () -> Unit, onHome: () -> Unit,
-) = Scrim {
+) = BasicSheet(onDismissRequest = onHome) {
     Card(width = 470, padTop = 32, padBottom = 28) {
         Text(
             text = if (isRecord) "新纪录！" else "冻僵了",
@@ -158,7 +166,11 @@ fun ResultCard(
         )
         Button(
             onClick = onRetry,
-            modifier = Modifier.fillMaxWidth().padding(top = 22.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 22.dp)
+                .spatialHoverEffect(SpatialHoverStyle.Highlight)
+                .controllerHapticFeedback(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PicoTheme.colorScheme.fillPrimary,
                 contentColor = PicoTheme.colorScheme.labelPrimaryLight,
@@ -168,7 +180,11 @@ fun ResultCard(
         }
         Button(
             onClick = onHome,
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .spatialHoverEffect(SpatialHoverStyle.Highlight)
+                .controllerHapticFeedback(),
             colors = ButtonDefaults.buttonColors(containerColor = PicoTheme.colorScheme.fillLight),
         ) {
             Text(text = "回到开始页", style = PicoTheme.typography.labelLarge)

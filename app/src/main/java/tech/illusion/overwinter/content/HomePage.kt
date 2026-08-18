@@ -18,6 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import com.pico.spatial.ui.foundation.haptic.controllerHapticFeedback
+import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
+import com.pico.spatial.ui.graphics.SpatialHoverStyle
 import tech.illusion.overwinter.game.debugForce
 import tech.illusion.overwinter.game.GameEngine
 import tech.illusion.overwinter.game.Phase
@@ -94,6 +97,8 @@ fun HomePage() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .spatialHoverEffect(SpatialHoverStyle.Highlight)
+            .controllerHapticFeedback()
             .pointerInput(Unit) { detectTapGestures { engine.flap() } }
     ) {
         Canvas(Modifier.fillMaxSize()) {
