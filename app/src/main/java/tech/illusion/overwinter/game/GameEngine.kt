@@ -38,7 +38,7 @@ private const val SCROLL_MAX = 230f
 
 // —— 数值契约 §5 ——
 private const val TEMP_MAX = 100f
-private const val TEMP_DRAIN = 2f       // 每秒
+private const val TEMP_DRAIN = 1.2f     // 每秒。纯挨冻可撑 83s（原来 2f/s 只有 50s）
 private const val TEMP_HIT = 25f        // 撞枝
 private const val TEMP_BERRY = 18f      // 吃浆果
 private const val HURT_TIME = 0.8f      // 撞击硬直

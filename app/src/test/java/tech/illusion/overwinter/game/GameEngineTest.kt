@@ -20,7 +20,7 @@ class GameEngineTest {
         assertEquals(Phase.NotStarted, e.phase)
     }
 
-    @Test fun `temperature drains 2 per second`() {
+    @Test fun `temperature drains at the tuned rate`() {
         val e = playing()
         // 边扇翅边跑，保证这段时间里既没落地也没撞到东西
         var t = 0f; var since = 0f
@@ -29,7 +29,7 @@ class GameEngineTest {
             e.update(1f / 90f); t += 1f / 90f; since += 1f / 90f
         }
         assertEquals(Phase.Playing, e.phase)
-        assertEquals(95f, e.temp, 0.6f)   // 2.5s * 2 = 5
+        assertEquals(97f, e.temp, 0.6f)   // 2.5s * 1.2 = 3
     }
 
     @Test fun `first obstacle is far enough to give a runway`() {
