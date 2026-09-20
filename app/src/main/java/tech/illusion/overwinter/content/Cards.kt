@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.pico.spatial.ui.foundation.layout.offset
 import androidx.compose.ui.unit.sp
 import com.pico.spatial.ui.design.Button
 import com.pico.spatial.ui.design.ButtonDefaults
@@ -50,6 +51,10 @@ private fun Scrim(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // 压在所有绘制层之前。不加这个，小鸟（Z_BIRD=20dp）会穿过结算卡浮在它前面。
+            // 比 Z_NEAR 还靠前是刻意的：模态 UI 的可读性优先于"雪飘在最前面"，
+            // 不能让近雪片糊住"开始飞行"按钮。
+            .offset(z = Z_CARD)
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) { awaitPointerEvent().changes.forEach { it.consume() } }

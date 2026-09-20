@@ -24,6 +24,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.pico.spatial.ui.foundation.haptic.controllerHapticFeedback
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
+import com.pico.spatial.ui.foundation.layout.offset
 import com.pico.spatial.ui.graphics.SpatialHoverStyle
 import tech.illusion.overwinter.game.debugForce
 import tech.illusion.overwinter.game.GameEngine
@@ -121,19 +122,25 @@ fun HomePage() {
             .controllerHapticFeedback()
             .pointerInput(Unit) { detectTapGestures { engine.flap() } }
     ) {
+        // 四张叠放的 Canvas，各自挂 z 偏移。同一张 Canvas 内部表达不了深度，这是拆开的唯一原因。
+        // 每张都要读 tick 订阅重组——漏掉哪张，哪一层就不动了。
+        // offset 必须是 com.pico.spatial.ui.foundation.layout 那个，AndroidX 的没有 z 参数。
         Canvas(Modifier.fillMaxSize()) {
-            @Suppress("UNUSED_EXPRESSION") tick        // 订阅重组
+            @Suppress("UNUSED_EXPRESSION") tick
             val a = art
-            if (a == null) {
-                drawRect(Color(0xFF8FBEDB))            // 素材加载中的底色
-            } else {
-                // Task 3 会把这四行拆到四张各自带 z 偏移的 Canvas 上。
-                // 现在先单层顺序调用，好让"拆分有没有拆错"能独立于"z 有没有生效"验收。
-                drawFar(engine, a, clock)
-                drawPlay(engine, a, clock)
-                drawBird(engine, a, clock)
-                drawNear(engine, a, clock)
-            }
+            if (a == null) drawRect(Color(0xFF8FBEDB)) else drawFar(engine, a, clock)
+        }
+        Canvas(Modifier.fillMaxSize().offset(z = Z_PLAY)) {
+            @Suppress("UNUSED_EXPRESSION") tick
+            art?.let { drawPlay(engine, it, clock) }
+        }
+        Canvas(Modifier.fillMaxSize().offset(z = Z_BIRD)) {
+            @Suppress("UNUSED_EXPRESSION") tick
+            art?.let { drawBird(engine, it, clock) }
+        }
+        Canvas(Modifier.fillMaxSize().offset(z = Z_NEAR)) {
+            @Suppress("UNUSED_EXPRESSION") tick
+            art?.let { drawNear(engine, it, clock) }
         }
 
         when (phase) {
@@ -143,7 +150,9 @@ fun HomePage() {
                 score = scoreShown,
                 best = bestShown,
                 invincible = invinShown,
-                modifier = Modifier.fillMaxSize(),
+                // 和小鸟同档。不给 z 的话 HUD 会沉到枝干后面去——它是 Canvas 的兄弟节点，
+                // 一旦 Canvas 有了 z，绘制顺序就不再决定前后了。
+                modifier = Modifier.fillMaxSize().offset(z = Z_HUD),
             )
             Phase.GameOver -> ResultCard(
                 score = engine.score,
