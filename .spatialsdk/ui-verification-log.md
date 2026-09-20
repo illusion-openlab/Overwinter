@@ -306,3 +306,88 @@ media.audio_flinger: 8 Tracks of which 2 are active
 - 点击「玩法」后弹层实际打开效果（BasicSheet 遮罩深浅、正文可滚动性）——受模拟器 adb tap
   命中小按钮不可靠所限，本轮未做点击验证，只验证了关闭态的按钮可见性；弹层内部结构已代码走查
   确认符合契约，建议后续用真机手势验证一次实际打开效果。
+
+## 门禁 B · depth1 · 2026-09-20 — 空间分层与近景雪（四层拆分）
+
+**设备**：`emulator-5554`　**APK commit**：`b2d268c`（四层 Canvas 上 z 偏移，HUD 与卡片跟着归位）
+
+模拟器**只验四件事**，不对"浮起来了没有"给任何结论——单目截图判不出深度。
+
+```
+./gradlew assembleDebug && bash .spatialsdk/tools/verify-ui.sh depth1
+```
+
+锁内 68s（目标 90s / 硬上限 120s）。四态截图：`rdepth1-start.png` `rdepth1-cold.png`
+`rdepth1-over.png` `rdepth1-invin.png`，另附 `rdepth1-live-playing.png` / `rdepth1-live-over.png`
+（live 档自动开局 + 自动扇翅两次重组）。
+
+### 逐条结论
+
+1. **没有任何一层整个消失——通过。** 枝干、小鸟、近雪、开始卡/结算卡在对应状态截图里都能找到：
+   `rdepth1-start.png` 有卡片+小鸟+枝干，`rdepth1-cold.png` 有枝干+小鸟+浆果+近雪，
+   `rdepth1-invin.png` 小鸟嵌在树干里（无敌态正确表现）+ HUD 倒计时胶囊，结算卡见下方"截图有效性"。
+
+2. **近雪出现了——通过。** `rdepth1-cold.png` 放大截图（裁剪见验证过程）能看到多枚明显大于
+   背景雪粒的白色圆点，混在大量细小雪粒里，尺寸差异清晰可辨，符合近雪半径 3~7 / 远雪 0.9~3.1
+   的设计比例。`drawNear` 在 `HomePage.kt` 里挂在独立的第四张 `Canvas(z = Z_NEAR)` 上，
+   四个状态都无条件调用，不受 `phase` 影响。
+
+3. **构图与改动前一致，两处预期内差异符合设计——通过。**
+   - 与基线 `r6-start.png` / `r9-cold.png` / `r9-invin.png` / `r6-over.png` 逐张对比：
+     小鸟、枝干、HUD 胶囊（体温条、得分、无敌倒计时）、卡片的位置与尺寸均未变化。
+   - 预期差异 (a) 霜挪到窗面层：四个调试态的体温均不足以触发 `frost()` 的
+     `k > 0.42` 阈值（`cold`=18°、`invin`=30°，同改动前的基线一致，均看不到霜），
+     本轮截图无法直接看到"霜不再压住枝干/小鸟"的视觉差异，但已用
+     `git show 4023451` 核对代码：frost 从旧 `drawGame` 里排在 `bird()` 之后（压在最前）
+     挪进了新 `drawFar`（L0，最先画），语义上和契约描述的挪动完全吻合。
+   - 预期差异 (b) 远雪从枝干/小鸟之前变到之后：同一次 `git show 4023451` diff 证实，
+     旧版 `farSnow` 排在 `bird()` 之后（画在最前），新版挪进 `drawFar`（L0，最先画，
+     被 `drawPlay`/`drawBird` 盖住）。`rdepth1-cold.png` 放大树干区域可见一枚被树干
+     纹理蒙灰、不再是纯白圆点的雪粒——即远雪穿过树干时被遮挡变暗，视觉上验证了这一变化。
+     这是设计要求的正确行为，不是缺陷。
+
+4. **扇翅仍可触发，无崩溃——通过（用 live 档全链路证据代替，比原计划的静态查 log 更强）。**
+   `verify-ui.sh` 自带的 `live` 步骤在门禁窗口内完整跑通一次真实开局：
+   `rdepth1-live-playing.png` 拍到自动扇翅后小鸟离地起飞（体温 98°，说明帧循环已在推进）；
+   `rdepth1-live-over.png` 拍到 9s 后已经撞枝结算（穿过枝干 1、坚持 5.8s），证明输入→物理→
+   碰撞→计分→结算这条链路整体存活。
+   随后额外做了一次干净复核（`adb logcat -c` → `am start --es ow_debug live` → 等 8s →
+   `logcat -d | grep -ai "SoundPool\|MediaPlayer\|FATAL\|AndroidRuntime"`）：
+   全量 508 行 `overwinter` 相关日志里，`grep -ai "overwinter" | grep -ai "FATAL\|AndroidRuntime\|Exception\|crash"`
+   **零命中**，只有正常的 `am start -S` 强停旧进程 + `pico-cli app stop` 收尾时的
+   `AMS.Freeze` / `WorldSpaceNative destroy` 生命周期日志，没有崩溃堆栈。
+   未见 SoundPool/MediaPlayer 的"新建播放器"日志（可能是缓冲区窗口太短或多会话日志量把它们
+   挤掉），但没有异常堆栈这一条已经满足"没崩、管线活着"的验收线；音效表现本身按 AGENTS.md
+   一贯说明仍需人耳/真机判断。
+
+### 截图有效性（一个陷阱）
+
+`verify-ui.sh` 首次跑出的 `rdepth1-over.png` 是一张**空房间**——没有任何窗口内容，
+和 `r6-over.png` 基线完全对不上。没有直接判定为"结算卡消失"，而是先查了当时的 logcat：
+19:33 前后 `tech.illusion.spacecube`（另一个会话的应用）与 `tech.illusion.overwinter` 之间有
+`AppsFilter BLOCKED` 交互记录，怀疑是共享模拟器上另一会话的全空间应用短暂抢占导致这一帧拍到的
+是空场景（而不是我们自己的窗口内容）。等设备锁转为 `free` 后，单独复核了一次
+（`am start --es ow_debug over` → 等 10s → 截图 → `app stop`），拿到的
+`rdepth1-over-recheck.png` 与 `r6-over.png` 构图、分数（27/9/6/约 49s、历史最高 57）完全一致。
+**结论**：原始 `rdepth1-over.png` 是共享设备的陈旧/空场景伪影，不是本次改动引入的回归；
+以 `rdepth1-over-recheck.png` 作为本轮"结算卡未消失"的有效证据。
+
+### 深度效果本轮未验证
+
+**深度效果（小鸟/枝干/近雪的前后关系）本轮未验证——单目截图判不出深度，待用户真机主观验收。**
+四层 z 常量（`Z_PLAY=14dp` `Z_BIRD=20dp` `Z_NEAR=36dp` `Z_HUD=20dp` `Z_CARD=40dp`）均取自兄弟
+项目的经验值，本项目没有实测数据。真机验收后如需调参，只改 `SpatialDepth.kt` 里的五个常量。
+
+### 单元测试
+
+`./gradlew testDebugUnitTest --rerun-tasks` 全绿：`GameEngineTest` 26 + `SnowFieldTest` 8 +
+`ExampleUnitTest` 1 = **35 个**（`AGENTS.md` 此前的"17 个"是两轮改动前的旧值，已一并更正）。
+
+### 不可判定 / 未跑
+
+- 深度效果本身（见上）。
+- 撞枝/扇翅/结算音效的听感与音量平衡——只能人耳判断。
+- SoundPool/MediaPlayer 的"新建播放器"日志本轮没有在 8s 窗口内直接抓到（见第 4 条），
+  建议下次验证音效时把 `adb logcat -c` 到截图之间的窗口拉长，或者在 app 仍运行时执行
+  `dumpsys audio` 而不是等它退出后再看 logcat。
+- 「玩法」弹层的真实点击命中——不在本轮范围内，沿用第 v3→v4 轮的已知缺口。

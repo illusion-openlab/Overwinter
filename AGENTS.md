@@ -14,17 +14,25 @@
 - 素材规格清单（27 项，尚未产出）：[.spatialsdk/design-ref/asset-manifest.md](.spatialsdk/design-ref/asset-manifest.md)
 - 验证日志：[.spatialsdk/ui-verification-log.md](.spatialsdk/ui-verification-log.md) — **接手前先读**
 
-## 当前状态（2026-08-18）
+## 当前状态（2026-09-20）
 
 已完成：
 
 - `pico-cli project create --template planar` 基线，`assembleDebug` 通过（32MB APK）
-- `game/GameEngine.kt` 纯逻辑层 + **17 个 JUnit 测试全绿**
+- `game/GameEngine.kt` 纯逻辑层 + **35 个 JUnit 测试全绿**（`GameEngineTest` 26 + `SnowFieldTest` 8 + `ExampleUnitTest` 1）
 - `content/OverwinterTheme.kt` 固定配色（暖金主色 #E3B44A）+ 深色玻璃 `GlassScrim`
 - 插画层、HUD、开始卡、结算卡全部实现，Material 零引用（release classpath 也已清零）
-- DEBUG 截图入口（`--es ow_debug cold|over`）
+- DEBUG 截图入口（`--es ow_debug cold|over|invin|live`）
+- **空间深度分层与近景雪**（见「结构与分层」一节）：原单张 Canvas 拆成四张按深度分组
+  （`drawFar`/`drawPlay`/`drawBird`/`drawNear`），各自挂 `offset(z = ...)`；新增
+  `SnowField.kt`（两层雪的纯数学，8 个 JUnit 测试）和 `SpatialDepth.kt`（五个 z 常量集中调参入口）。
+  frost 与 farSnow 的绘制顺序各挪动了一处（详见 `SpatialDepth.kt`/`GameArt.kt` 顶部注释）。
 
-**验证进度**：已上机两轮（见 `.spatialsdk/ui-verification-log.md`）。第 2 轮拍到三态、发现 2 Blocker / 5 Major；第 3 轮修完后 `over` 态确认 5 项修复全部落地，但 `start` / `cold` 两张因等待不足拍空、**尚待补拍**。仍未验证：HUD 胶囊的深色玻璃、低温氛围、背景镜像对称的缓解效果。
+**验证进度**：已上机多轮（见 `.spatialsdk/ui-verification-log.md`）。历史轮次拍到三态并修完
+若干 Blocker/Major；花朵无敌（`invin`）态第 9 轮验证通过。**门禁 B · depth1**（2026-09-20）：
+四层/近雪/构图/无崩溃四项全部通过（含一次"空房间"陈旧截图误判的排查，已用复核截图纠正，
+详见验证日志）。**深度效果本身（小鸟/枝干/近雪的前后关系）单目模拟器截图无法判定，待用户
+戴真机 `PB311XKGL4160087B` 主观验收**——这是当前唯一还没有任何证据的可见性问题。
 
 未决项（契约 §0 有记录）：小鸟飞行动作待改、前景雪地层与截面帽/积雪冠缺素材。
 花朵无敌已于 2026-08-18 实现（契约 §5c）：3 秒，只挡碰撞不保暖，触地当地板钳住。
@@ -33,7 +41,10 @@
 
 ```
 game/GameEngine.kt      纯逻辑：物理、碰撞、体温、计分、障碍生成。不含任何 Compose/SDK 类型
-content/GameArt.kt      插画层：素材加载 + Canvas 绘制 + WinterPalette + 体温染色
+content/SnowField.kt    两层雪的纯数学，不含 Compose 类型，能用 JUnit 测
+content/SpatialDepth.kt 各层 z 深度常量。真机调参只改这里
+content/GameArt.kt      插画层：素材加载 + WinterPalette + 体温染色，四个按深度分组的绘制入口
+                        （drawFar/drawPlay/drawBird/drawNear，见下方「结构与分层」之后一节）
 content/Hud.kt          体温胶囊 + 得分胶囊
 content/Cards.kt        开始卡 / 结算卡（含 Scrim）
 content/GameAudio.kt    音效：短音走 SoundPool，循环环境音走 MediaPlayer
@@ -44,6 +55,19 @@ Main.kt                 DefaultWindowContainer { PicoTheme { HomePage() } }
 **纯逻辑层与 SDK 层严格分离**：`GameEngine.kt` 不 import 任何 Compose / Spatial 类型，所以它的每条规则都能用普通 JUnit 在 JVM 上测。后续加机制请延续这个分层——测试比上机验证快两个数量级。
 
 **为什么用 Compose 帧回调而不是 ECS**：本作是纯 2D 平面窗口应用，没有 3D 场景内容。CLAUDE.md 里"3D 行为用 ECS"的规则针对的是 Spatial 场景，不适用于这里。
+
+**空间深度分层（2026-09-20 新增）**：`HomePage.kt` 把原来一张 Canvas 拆成四张，各自挂
+`com.pico.spatial.ui.foundation.layout.offset(z = ...)`，z 值取自 `SpatialDepth.kt`：
+
+- L0（z=0，`drawFar`）：远景林、雾、远雪、四角结霜
+- L1（z=Z_PLAY）：枝干与浆果/花（`drawPlay`）
+- L2（z=Z_BIRD）：小鸟（`drawBird`），只比 L1 前 6dp——碰撞仍在 2D 平面算，浮太前会看起来撞了空气
+- L3（z=Z_NEAR，最靠近玩家）：近景雪（`SnowField.kt` 的 `nearFlake`）、胶片颗粒、结算压暗（`drawNear`）
+- HUD 胶囊挂 `Z_HUD`，开始卡/结算卡挂 `Z_CARD`（全局最前，模态可读性优先于"雪飘在前面"）
+
+单目模拟器截图判不出深度是否合适，只能验证"没有一层被裁掉""近雪确实在画""构图没跑偏"。
+真机主观验收后如果要调，**只改 `SpatialDepth.kt` 里那五个常量**，不要动分层结构或雪场公式。
+详见 `.spatialsdk/ui-verification-log.md` 「门禁 B · depth1」一节。
 
 ## UI 硬规则
 
@@ -111,7 +135,7 @@ export PICO_HOME='/Users/zohar/Library/PICO/sdk'
 export JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home'
 cd Overwinter
 ./gradlew assembleDebug
-./gradlew testDebugUnitTest                      # 17 个纯逻辑测试
+./gradlew testDebugUnitTest                      # 35 个纯逻辑测试（GameEngine 26 + SnowField 8 + Example 1）
 
 # 上机（先抢锁，见上）
 pico-cli app install -d emulator-5554 -r app/build/outputs/apk/debug/app-debug.apk
@@ -141,7 +165,10 @@ adb -s emulator-5554 shell am start -S \
 
 ## 下一步
 
-1. **真机扫一遍射线**：确认「开始飞行」按钮点得到、覆盖层不穿透。这是目前唯一一类还没有任何证据的问题——静态截图和单测都判不出来
-2. **最高分持久化**：目前只在内存里，退出就没了
+1. **真机验收空间深度效果**：小鸟/枝干/近雪的前后层次感是否合适，全靠用户戴 `PB311XKGL4160087B`
+   主观判断——单目模拟器截图完全看不出立体深度。反馈「再往前/再往后/雪太前了」之类后，
+   **只改 `SpatialDepth.kt` 里那五个 z 常量**重出包，不要动分层结构或雪场公式
+2. **真机扫一遍射线**：确认「开始飞行」按钮点得到、覆盖层不穿透。这是目前唯一一类还没有任何证据的问题——静态截图和单测都判不出来
+3. **最高分持久化**：目前只在内存里，退出就没了
 4. 素材到位后按 `asset-manifest.md` 替换，并跑 `.spatialsdk/tools/validate-assets.py`
 5. 花朵无敌的余晖残影目前被光晕盖住看不见，想要的话调 alpha 或缩小光晕半径
