@@ -1,4 +1,4 @@
-# 越冬 · 设计契约 v3
+# 越冬 · 设计契约 v4
 
 ## 0. 元信息
 
@@ -249,3 +249,72 @@ UI 一律用 SpatialUI 组件并包在 `PicoTheme` 里，禁止 Material / Mater
 **本轮不验证**（功能延后或缺素材，留待契约 v2 增量）：花朵无敌态整帧、锯断截面帽、积雪冠、前景雪地层 L5、`paper_grain` 的实际观感。
 
 **预期不可判定项**（透视截图判不出，报告中须显式列出）：所有精确 dp 间距与尺寸（含 `temp_track` 的 184×9dp）、碰撞矩形与轮廓的对齐、冰柱 12dp 等长、磨砂玻璃的模糊半径。
+
+---
+
+# 越冬 · 设计契约 v3 → v4 增量（新增"玩法"入口按钮 + 玩法说明弹层）
+
+## 0. 元信息（追加）
+
+- 契约版本：v4（v3 → v4 变更：开始页新增"玩法"入口按钮与配套的玩法说明弹层；不改动任何既有元素的位置/逻辑）
+- 变更范围：仅 `StartCard`（`Cards.kt`）新增一个浮动按钮 + 一层可关闭的说明浮层；`ResultCard`、`Hud`、`GameEngine` 均不受影响
+- 说明：本次改动没有独立的 Figma/截图设计源，本增量本身即为该功能的设计依据（门禁 A 已用户确认生效）
+
+## 1. 面板清单（追加）
+
+| 面板 id | 容器类型 | 面板尺寸 | 层级/父面板 | 出现时机 |
+|---|---|---|---|---|
+| `howto_card` | Surface（非容器，`BasicSheet` 承载） | 480dp×wrap（内部滚动，可视高度上限约 340dp） | main · 覆盖层，浮于 `start_card` 之上 | NotStarted 且 `showHowTo=true` |
+
+容器类型不变：仍是 `main` 这一个 `WindowContainer` 内部的 Compose 覆盖层，不新增独立容器，不引入 Stage。`howto_card` 走的是 `ResultCard` 已经在用的 `BasicSheet`（`SpatialDialogDelegate`），不是手写 Scrim。
+
+## 2. 元素表 · UI 层（追加）
+
+| id | 类型 | 父容器 | 锚点 | 偏移 | 尺寸 | 视觉描述（截图判据） | 圆角/形状 |
+|---|---|---|---|---|---|---|---|
+| `howto_button` | Button（`ButtonDefaults.Min` 预设，57×32dp） | `start_card` 外新包一层 `Box` | 右上 | 16,16 | wrap×32dp | 容器色 = `fillPrimary`（与 `start_button` 同一角色）alpha≈0.3 的浅淡填充；内容色（图标+文字）同一角色但满饱和；前置一个 16dp 圆形"?"徽标；不带描边；独立浮在卡片右上角，不落进标题/最高分/开始按钮那条纵向排列 | Min 预设自带胶囊圆角，不单独指定 shape |
+| `howto_badge` | Box + Text（圆形"?"字形，Canvas 手绘图标同款退化手法） | `howto_button` | 内容首位 | - | 16×16dp | 底色 `fillPrimary` alpha≈0.68，文字用 `labelPrimaryLight`（压在暖色填充上的深字，与 `start_button` 文字同一角色） | 圆形 |
+| `howto_card` | Surface（`BasicSheet` 内容） | `BasicSheet` | 居中 | 0,0 | 480dp×wrap（内部滚动） | 磨砂玻璃卡片，与 `start_card`/`result_card` 同一种玻璃质感（复用项目内 `Card` 私有组合项）；背后 `start_card` 被 `BasicSheet` 自带的模态遮罩压暗 | 26dp，与 `start_card`/`result_card` 同一圆角 |
+| `howto_header` | Row | `howto_card` | 上，横跨卡片宽 | - | fill×wrap | 标题（"越冬 · 玩法说明"）靠左，"×"关闭按钮靠右，两端对齐 | - |
+| `howto_close_button` | Button（`ButtonDefaults.Min`，"×"字符） | `howto_header` | 右中 | - | wrap×32dp | 半透明白填充（`fillLight`，与 `home_button` 同款次要按钮语言）+ 次级文本色 `labelSecondary`，明显弱于主操作 | Min 预设胶囊圆角 |
+| `howto_intro_label` / `howto_controls_label` / `howto_rules_label` | Text | `howto_card` 内滚动区 | 各分节顶部 | - | wrap×wrap | 强调色 `fillPrimary`（与 `result_score`/`retry_button` 同一路暖色高亮），文案分别为"简介"/"操作"/"规则" | - |
+| `howto_intro_body` / `howto_controls_item` | Text | 对应分节标题下方 | - | - | fill×wrap | 主文本色 `labelPrimary`，正文字号，自动换行；`howto_controls_item` 保留原文"-"前缀 | - |
+| `howto_rules_item` ×8 | Text | `howto_rules_label` 下方，逐条纵向排列 | - | - | fill×wrap | 主文本色 `labelPrimary`，保留原文"1."……"8." 编号，8 个独立 `Text`，不合并成一段、不换成短横线/圆点 | - |
+
+**实现结构说明：**
+
+- `howto_button` 通过在 `StartCard` 里现有 `Card(...)` 调用外新包一层 `Box` 实现，`Card` 内部原有 Column 的六个子元素（标题/副标题/tagline/最高分/开始按钮/hint）一个未动；`howto_button` 是这层新 `Box` 的第二个子项，`Modifier.align(Alignment.TopEnd)`。
+- `howto_card` 复用 `ResultCard` 已在用的 `BasicSheet(onDismissRequest = ...)`。反编译确认它底层走 `SpatialDialogDelegate`，是独立模态窗口：点击卡片外部自动触发 `onDismissRequest`，卡片内部点击不会下穿——不需要再手写一遍 `Scrim` + `pointerInput` 消费。
+- `howto_card` 内部结构：标题行（`howto_header`）+ 一个 `Column(Modifier.heightIn(max=340.dp).verticalScroll(...))` 承载三个分节，保证 8 条规则不被裁切。
+
+## 3. 状态清单（追加）
+
+| 元素 id | 状态 | 视觉变化 |
+|---|---|---|
+| — | 玩法弹层 | 新增布尔态 `showHowTo`，`remember` 在 `StartCard` 组合作用域内，只在 `NotStarted` 阶段存在；`when(phase)` 离开 `NotStarted` 时 `StartCard` 整体移出组合，该状态随之销毁，天然满足"切阶段前强制关闭"，且 `BasicSheet` 打开时挡住 `start_button`，不存在弹层开着还能进 `Playing` 的路径 |
+| `howto_button` | NotStarted | 显示；随 `start_card` 一起，`Playing`/`GameOver` 隐藏 |
+| `howto_card` | `showHowTo=true` | 显示，压在 `start_card` 之上；`start_card` 本身不隐藏、不改变（弹层是叠加，不是替换） |
+| `howto_close_button` 点击 / 点击 `howto_card` 外部 | — | 两者效果相同（`BasicSheet` 的 `onDismissRequest`）：`showHowTo=false`，弹层消失，回到纯 `start_card` |
+
+## 4. 文案清单（追加）
+
+| 元素 id | 文案 |
+|---|---|
+| `howto_button` | 玩法 |
+| `howto_title` | 越冬 · 玩法说明 |
+| `howto_intro_label` | 简介 |
+| `howto_intro_body` | 操控一只小鸟穿越结霜的枯枝林，靠点击不断振翅爬升，躲开树枝、吃浆果续命、采花朵加分，尽量在体温耗尽前飞得更远，刷新自己的历史最高分。 |
+| `howto_controls_label` | 操作 |
+| `howto_controls_item` | - 点击：点屏幕任意位置，小鸟就振一下翅膀往上冲；松手不点，它会持续往下坠。 |
+| `howto_rules_label` | 规则 |
+| `howto_rules_item` ×8（逐条原样，顺序不变） | 1. 你操控一只小鸟，在结霜的枯枝林里不停往前飞：点一下屏幕，它就振一下翅膀往上冲，点几下就飞几下，没有连发也没有蓄力。 2. 体温是你的生命线，从满格 100 开始就会随时间不断流逝——哪怕一根树枝都没撞到，它也会自己往下掉，迟早得靠拾取物续命。 3. 撞到树枝会让体温骤降一大截，比自然流逝快得多；小鸟会闪一下、下坠的势头被清空，但手感照旧，你可以立刻继续点击往上飞，不会被卡住输入。 4. 树枝丛里藏着两种拾取物：浆果能大幅回体温（顶多回满，不会超过 100），花朵能换来几秒无敌外加直接加分，但花朵本身不回体温——别把它当保命符。 5. 无敌时撞树枝会直接穿过去、完全不掉血，但体温该掉还是照掉；无敌快结束时如果小鸟正好贴着地面，一结束就会立刻按落地处理。 6. 飞太高会被轻轻托住，不扣分也不会出事；飞太低、机身碰到地面才是真的危险——只要那一刻没有无敌状态，游戏立刻结束。 7. 每完全飞过一组树枝记 1 分，空手飞过也算；每采到一朵花额外 +5 分；浆果只回体温、不计分。 8. 越往后飞，前进速度会越来越快（到一定距离后封顶，不会无限加速），但树枝间的空隙大小和间距始终不变——真正变难的是留给你反应的时间，不是关卡本身在变。 |
+
+> 上表"简介/操作/规则"三段文案是唯一权威来源，逐字照抄，禁止改写、转述、精简或补充新内容。实现时 `howto_rules_item` 按原有 8 条编号逐条各占一个 Text（保留"1."……"8." 前缀），不合并成一整段，也不把编号换成短横线/圆点。
+
+## 5. 数值契约 / 6. 不做清单（追加）
+
+不新增、不变更任何数值或 YAGNI 边界；本次改动纯 UI，不涉及玩法数值、不涉及 `GameEngine`。
+
+## 7. 截图验证计划（追加）
+
+现有 3 张截图（冷启动 / 游玩中 / 结算）覆盖范围不含玩法弹层这一新状态。若纳入门禁 B 验证，可追加第 4 张截图：「点击 `howto_button` 后」，核对 `howto_card` `howto_title` `howto_intro_body` `howto_controls_item` `howto_rules_label`（分节标题可辨即可，8 条规则逐字判读不强求）、背景 `start_card` 已被压暗但仍可辨。
