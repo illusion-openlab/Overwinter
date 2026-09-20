@@ -122,11 +122,6 @@ private const val WING_DOWN = -1.30f     // −76°，下扑到底
 private const val WING_TRAVEL = WING_UP - WING_DOWN
 private const val DOWN_FRAC = 0.30f
 
-private fun rnd(i: Int, seed: Float): Float {
-    val x = sin(i * 127.1f + seed * 311.7f) * 43758.55f
-    return x - floor(x)
-}
-
 /** 世界 dp → 画布 px 的绘制上下文 */
 class Painter(val d: DrawScope, val s: Float) {
     fun img(b: ImageBitmap, x: Float, y: Float, w: Float, h: Float,
@@ -162,7 +157,7 @@ fun DrawScope.drawGame(e: GameEngine, art: Art, t: Float) {
     obstacles(p, art, e, k, t)
     pickups(p, art, e, t)
     bird(p, art, e, t)
-    snow(p, k, t)
+    farSnow(p, k, t)
     frost(p, if (e.invincible > 0f) k * 0.38f else k)
     grain(p, art)
 }
@@ -359,16 +354,22 @@ private fun bird(p: Painter, art: Art, e: GameEngine, t: Float) {
     birdBody(p, art, bx, e.birdY, rot, wingA, 1f)
 }
 
-private fun fmod(v: Float, m: Float): Float { val r = v % m; return if (r < 0f) r + m else r }
-
-private fun snow(p: Painter, k: Float, t: Float) {
-    val n = (50 + k * 140).toInt()
+/** L0 窗面层的远雪。公式在 SnowField.kt，这里只负责画。 */
+private fun farSnow(p: Painter, k: Float, t: Float) {
+    val f = Flake()
+    val n = farSnowCount(k)
     for (i in 0 until n) {
-        val speed = 16f + rnd(i, 4.4f) * 46f
-        val x = fmod(rnd(i, 1.1f) * WORLD_W - t * (8f + speed * 0.12f), WORLD_W)
-        val y = fmod(rnd(i, 2.2f) * WORLD_H + t * speed * (1f + k * 1.5f), WORLD_H)
-        p.circle(WinterPalette.Snow, x + sin(t * 1.3f + rnd(i, 6.6f) * 6.28f) * 7f, y,
-            0.9f + rnd(i, 3.3f) * 2.2f, (0.3f + rnd(i, 5.5f) * 0.6f) * (0.5f + 0.5f * (1f - k * 0.4f)))
+        farFlake(i, t, k, f)
+        p.circle(WinterPalette.Snow, f.x, f.y, f.r, f.alpha)
+    }
+}
+
+/** L3 近景层的近雪。大、快、摆得开，数量固定，不随体温加密。 */
+private fun nearSnow(p: Painter, t: Float) {
+    val f = Flake()
+    for (i in 0 until NEAR_SNOW_COUNT) {
+        nearFlake(i, t, f)
+        p.circle(WinterPalette.Snow, f.x, f.y, f.r, f.alpha)
     }
 }
 
