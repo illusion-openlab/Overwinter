@@ -149,17 +149,45 @@ class Painter(val d: DrawScope, val s: Float) {
         d.drawRect(c, Offset(x * s, y * s), Size(w * s, h * s), alpha)
 }
 
-fun DrawScope.drawGame(e: GameEngine, art: Art, t: Float) {
+/**
+ * 按深度分组的四个绘制入口。每个入口画到自己那张 Canvas 上，Canvas 再各自挂 z 偏移
+ * （见 SpatialDepth.kt）。同一张 Canvas 内部表达不了深度，这就是要拆开的唯一原因。
+ *
+ * 四个函数**加起来**的图元顺序和改动前的 drawGame 完全一致，只有一处例外：
+ * frost 从最前挪到了 L0 窗面层。语义上"这扇窗户结霜了"成立，并且顺带不再糊住
+ * 左上/右上的 HUD 胶囊。这是本次唯一一处刻意的观感变化。
+ */
+
+/** L0 窗面层（z = 0）：远景林、雾、远雪、四角结霜。 */
+fun DrawScope.drawFar(e: GameEngine, art: Art, t: Float) {
     val p = Painter(this, size.width / WORLD_W)
     val k = coldness(e.warmth)
     background(p, art, e.scroll, e.warmth)
     haze(p, k)
-    obstacles(p, art, e, k, t)
-    pickups(p, art, e, t)
-    bird(p, art, e, t)
     farSnow(p, k, t)
+    // 无敌期间减轻结霜，和改动前的实参逐字一致
     frost(p, if (e.invincible > 0f) k * 0.38f else k)
+}
+
+/** L1 玩法层（z = Z_PLAY）：枝干与浆果/花。 */
+fun DrawScope.drawPlay(e: GameEngine, art: Art, t: Float) {
+    val p = Painter(this, size.width / WORLD_W)
+    obstacles(p, art, e, coldness(e.warmth), t)
+    pickups(p, art, e, t)
+}
+
+/** L2 小鸟层（z = Z_BIRD）：只比枝干前 6dp——碰撞是在 2D 平面算的，浮太前撞枝会像撞了空气。 */
+fun DrawScope.drawBird(e: GameEngine, art: Art, t: Float) {
+    bird(Painter(this, size.width / WORLD_W), art, e, t)
+}
+
+/** L3 近景层（z = Z_NEAR，最靠近玩家）：近雪、胶片颗粒、结算压暗。 */
+fun DrawScope.drawNear(e: GameEngine, art: Art, t: Float) {
+    val p = Painter(this, size.width / WORLD_W)
+    nearSnow(p, t)
     grain(p, art)
+    // 原 drawDim。必须留在最前面这一层，放 L0 就只压得暗背景。
+    if (e.phase == Phase.GameOver) p.d.drawRect(Color(0xFF0C1420), alpha = 0.40f)
 }
 
 private fun background(p: Painter, art: Art, scroll: Float, warmth: Float) {
@@ -406,10 +434,6 @@ private fun grain(p: Painter, art: Art) {
     }
 }
 
-/** 结算态：原地压暗，不切场景 */
-fun DrawScope.drawDim(e: GameEngine) {
-    if (e.phase == Phase.GameOver) drawRect(Color(0xFF0C1420), alpha = 0.40f)
-}
 
 @Suppress("unused")
 private val groundRef = GROUND_Y

@@ -127,8 +127,12 @@ fun HomePage() {
             if (a == null) {
                 drawRect(Color(0xFF8FBEDB))            // 素材加载中的底色
             } else {
-                drawGame(engine, a, clock)
-                drawDim(engine)
+                // Task 3 会把这四行拆到四张各自带 z 偏移的 Canvas 上。
+                // 现在先单层顺序调用，好让"拆分有没有拆错"能独立于"z 有没有生效"验收。
+                drawFar(engine, a, clock)
+                drawPlay(engine, a, clock)
+                drawBird(engine, a, clock)
+                drawNear(engine, a, clock)
             }
         }
 
