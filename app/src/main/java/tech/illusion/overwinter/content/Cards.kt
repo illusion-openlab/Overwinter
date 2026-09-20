@@ -51,9 +51,13 @@ private fun Scrim(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // 压在所有绘制层之前。不加这个，小鸟（Z_BIRD=20dp）会穿过结算卡浮在它前面。
-            // 比 Z_NEAR 还靠前是刻意的：模态 UI 的可读性优先于"雪飘在最前面"，
-            // 不能让近雪片糊住"开始飞行"按钮。
+            // 只有 StartCard 走这个 Scrim，所以 Z_CARD 目前只有这一个使用点。
+            // ResultCard 和 HowToSheet 都是 BasicSheet 起的独立模态窗口，深度由 shell
+            // 决定，不经过这里、也不读 Z_CARD——AGENTS.md 早先说两张卡都挂 Z_CARD 是错的，
+            // 已经改正。压在所有绘制层之前：不加这个，小鸟（Z_BIRD）会穿过 StartCard
+            // 浮在它前面。比 Z_NEAR 还靠前是刻意的：模态 UI 的可读性优先于"雪飘在最前面"，
+            // 不能让近雪片糊住"开始飞行"按钮。真机调 Z_NEAR 只会保护到 StartCard，
+            // 结算卡/玩法说明弹层的深度不受这个数字影响。
             .offset(z = Z_CARD)
             .pointerInput(Unit) {
                 awaitPointerEventScope {

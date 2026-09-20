@@ -160,9 +160,19 @@ class Painter(val d: DrawScope, val s: Float) {
  * 2. frost 从最终覆盖层移到 L0 窗面层。语义上"这扇窗户结霜了"成立，并且顺带不再糊住
  *    左上/右上的 HUD 胶囊。
  * 3. nearSnow 是新增的，画在 L3 最前面。
+ *
+ * **重要陷阱（已实测确认）**：`offset(z = ...)` 会把子节点放进它自己独立的
+ * GraphicsLayer/RenderNode。层内发出的 `BlendMode` 是跟"这张图层自己的缓冲区"混合，
+ * 而不是跟它背后的场景混合——图层缓冲区一开始是全透明的。四层拆分前 `grain()` 的
+ * `BlendMode.Overlay` 和无敌光晕的 `BlendMode.Plus` 都是跨着这个新图层边界写的，
+ * 因而都退化成了普通的不透明覆盖（Overlay 退化成整屏蒙灰雾，Plus 退化成一坨奶白圆盘）。
+ * 结论：**没有真实背景可混合的层，不要在其中使用非 SrcOver 的 BlendMode**。
+ * `grain()` 已挪到 `drawFar`（L0，有真实场景内容打底）末尾；代价是颗粒纹理现在只覆盖
+ * 远景，不再盖住枝干和小鸟——这是四层拆分之后无法避免的取舍，但远好于原来的整屏蒙雾。
+ * 无敌光晕已挪到 `drawPlay`（L1，枝干层）末尾，理由同上，见 `invinGlow()` 的注释。
  */
 
-/** L0 窗面层（z = 0）：远景林、雾、远雪、四角结霜。 */
+/** L0 窗面层（z = 0）：远景林、雾、远雪、四角结霜、胶片颗粒。 */
 fun DrawScope.drawFar(e: GameEngine, art: Art, t: Float) {
     val p = Painter(this, size.width / WORLD_W)
     val k = coldness(e.warmth)
@@ -171,13 +181,20 @@ fun DrawScope.drawFar(e: GameEngine, art: Art, t: Float) {
     farSnow(p, k, t)
     // 无敌期间减轻结霜，和改动前的实参逐字一致
     frost(p, if (e.invincible > 0f) k * 0.38f else k)
+    // 必须放在本层最后一步、且必须留在这一层：BlendMode.Overlay 需要背后有真实内容
+    // 才能正确工作，L0 是唯一有完整场景（背景/雾/远雪/霜）打底的层。挪去 L3（近景层，
+    // 挂了 offset(z) 独立图层）会让 Overlay 混合空的图层缓冲区退化成整屏不透明蒙灰雾。
+    grain(p, art)
 }
 
-/** L1 玩法层（z = Z_PLAY）：枝干与浆果/花。 */
+/** L1 玩法层（z = Z_PLAY）：枝干与浆果/花，以及无敌光晕（见 invinGlow 注释）。 */
 fun DrawScope.drawPlay(e: GameEngine, art: Art, t: Float) {
     val p = Painter(this, size.width / WORLD_W)
     obstacles(p, art, e, coldness(e.warmth), t)
     pickups(p, art, e, t)
+    // 必须是本层最后一步：BlendMode.Plus 是加色混合，需要背后有枝干内容才能"照亮"它们；
+    // 挂在小鸟层（L2，独立 offset(z) 图层）会因为图层缓冲区是空的而退化成一坨奶白圆盘。
+    invinGlow(p, e, t)
 }
 
 /** L2 小鸟层（z = Z_BIRD）：只比枝干前 6dp——碰撞是在 2D 平面算的，浮太前撞枝会像撞了空气。 */
@@ -185,11 +202,10 @@ fun DrawScope.drawBird(e: GameEngine, art: Art, t: Float) {
     bird(Painter(this, size.width / WORLD_W), art, e, t)
 }
 
-/** L3 近景层（z = Z_NEAR，最靠近玩家）：近雪、胶片颗粒、结算压暗。 */
+/** L3 近景层（z = Z_NEAR，最靠近玩家）：近雪、结算压暗。 */
 fun DrawScope.drawNear(e: GameEngine, art: Art, t: Float) {
     val p = Painter(this, size.width / WORLD_W)
     nearSnow(p, t)
-    grain(p, art)
     // 原 drawDim。必须留在最前面这一层，放 L0 就只压得暗背景。
     if (e.phase == Phase.GameOver) p.d.drawRect(Color(0xFF0C1420), alpha = 0.40f)
 }
@@ -366,24 +382,31 @@ private fun bird(p: Painter, art: Art, e: GameEngine, t: Float) {
     if (e.invincible > 0f) {
         // 穿过枝干的雪雾（在小鸟之下画，让小鸟压在雾上面）
         if (e.passingThrough) snowBurst(p, bx + 16f, e.birdY + 4f, t)
-        // 余晖：身后三重递减残影
+        // 余晖：身后三重递减残影。光晕本身画到了 L1（枝干层），见 invinGlow 注释——
+        // 后果是余晖现在盖在光晕上面而不是下面，影响很小，可接受。
         for (i in 3 downTo 1) {
             birdBody(p, art, bx - i * 34f, e.birdY + sin(t * 2.1f - i * 0.55f) * 6f,
                 rot * 0.7f, wingA + i * 0.20f, 0.34f * (4 - i) / 4f)
         }
-        // 暖白光晕，加色混合
-        val pl = 0.84f + 0.16f * sin(t * 7f)
-        p.d.drawCircle(
-            Brush.radialGradient(
-                0f to WinterPalette.InvinGlow.copy(alpha = 0.92f),
-                0.32f to Color(0xFFFFE4A8).copy(alpha = 0.40f),
-                1f to Color.Transparent,
-                center = Offset(bx * p.s, e.birdY * p.s), radius = 86f * pl * p.s
-            ), 86f * pl * p.s, Offset(bx * p.s, e.birdY * p.s), blendMode = BlendMode.Plus
-        )
     }
 
     birdBody(p, art, bx, e.birdY, rot, wingA, 1f)
+}
+
+/** 无敌光晕。必须画在 L1（枝干层）而不是 L2（小鸟层）：BlendMode.Plus 是加色混合，
+ *  在自己的空图层里会退化成普通覆盖，把枝干糊成一团奶白而不是照亮它。 */
+private fun invinGlow(p: Painter, e: GameEngine, t: Float) {
+    if (e.invincible <= 0f) return
+    val bx = tech.illusion.overwinter.game.BIRD_X
+    val pl = 0.84f + 0.16f * sin(t * 7f)
+    p.d.drawCircle(
+        Brush.radialGradient(
+            0f to WinterPalette.InvinGlow.copy(alpha = 0.92f),
+            0.32f to Color(0xFFFFE4A8).copy(alpha = 0.40f),
+            1f to Color.Transparent,
+            center = Offset(bx * p.s, e.birdY * p.s), radius = 86f * pl * p.s
+        ), 86f * pl * p.s, Offset(bx * p.s, e.birdY * p.s), blendMode = BlendMode.Plus
+    )
 }
 
 /** L0 窗面层的远雪。公式在 SnowField.kt，这里只负责画。 */

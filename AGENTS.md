@@ -62,8 +62,13 @@ Main.kt                 DefaultWindowContainer { PicoTheme { HomePage() } }
 - L0（z=0，`drawFar`）：远景林、雾、远雪、四角结霜
 - L1（z=Z_PLAY）：枝干与浆果/花（`drawPlay`）
 - L2（z=Z_BIRD）：小鸟（`drawBird`），只比 L1 前 6dp——碰撞仍在 2D 平面算，浮太前会看起来撞了空气
-- L3（z=Z_NEAR，最靠近玩家）：近景雪（`SnowField.kt` 的 `nearFlake`）、胶片颗粒、结算压暗（`drawNear`）
-- HUD 胶囊挂 `Z_HUD`，开始卡/结算卡挂 `Z_CARD`（全局最前，模态可读性优先于"雪飘在前面"）
+- L3（z=Z_NEAR，最靠近玩家）：近景雪（`SnowField.kt` 的 `nearFlake`）、结算压暗（`drawNear`）。
+  胶片颗粒（`grain()`）实际画在 L0（`drawFar`），不在这一层——`offset(z)` 把子节点放进独立
+  图层，`grain()` 的 `BlendMode.Overlay` 需要真实背景才能正确工作，只有 L0 有完整场景打底
+- HUD 胶囊挂 `Z_HUD`（= `Z_BIRD + 2.dp`，派生值，避免和小鸟撞成同一档）。
+  `Z_CARD` 只有一个使用点：`Cards.kt` 里 `Scrim`（只包 `StartCard`）。`ResultCard` 和
+  `HowToSheet` 都是 `BasicSheet` 窗口，深度由 shell 决定，不读 `Z_CARD`——真机调
+  `Z_NEAR` 只会保护到开始卡，保护不到结算卡/玩法说明弹层。
 
 单目模拟器截图判不出深度是否合适，只能验证"没有一层被裁掉""近雪确实在画""构图没跑偏"。
 真机主观验收后如果要调，**只改 `SpatialDepth.kt` 里那五个常量**，不要动分层结构或雪场公式。

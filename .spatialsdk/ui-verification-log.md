@@ -332,7 +332,13 @@ media.audio_flinger: 8 Tracks of which 2 are active
    的设计比例。`drawNear` 在 `HomePage.kt` 里挂在独立的第四张 `Canvas(z = Z_NEAR)` 上，
    四个状态都无条件调用，不受 `phase` 影响。
 
-3. **构图与改动前一致，两处预期内差异符合设计——通过。**
+3. **构图与改动前一致，两处预期内差异符合设计——通过，但范围要更正。**
+   **更正（task-4，见 task-4-report.md）：本条实际只比对了位置和尺寸，没有比对色调/亮度**
+   **（灰度直方图、动态范围等）。这正是 Fix 1 那个 `grain()` Overlay 退化成整屏蒙灰雾的
+   回归能连过三轮评审的原因——色调没有一次被纳入这条对比。task-4 用
+   `r9-cold.png` vs `rdepth1-cold.png` 的灰度 min/p1/p99/std 补做了色调测量，
+   证实了这个回归；本条从这一轮起把"色调对比"也列为本门禁该检查的项目，
+   不再只看构图位置。**
    - 与基线 `r6-start.png` / `r9-cold.png` / `r9-invin.png` / `r6-over.png` 逐张对比：
      小鸟、枝干、HUD 胶囊（体温条、得分、无敌倒计时）、卡片的位置与尺寸均未变化。
    - 预期差异 (a) 霜挪到窗面层：四个调试态的体温均不足以触发 `frost()` 的
@@ -346,7 +352,21 @@ media.audio_flinger: 8 Tracks of which 2 are active
      纹理蒙灰、不再是纯白圆点的雪粒——即远雪穿过树干时被遮挡变暗，视觉上验证了这一变化。
      这是设计要求的正确行为，不是缺陷。
 
-4. **扇翅仍可触发，无崩溃——通过（用 live 档全链路证据代替，比原计划的静态查 log 更强）。**
+4. **扇翅仍可触发，无崩溃——通过。指针穿透路径未覆盖，已更正。**
+   **更正（task-4，见 task-4-report.md）：下面的 `live` 档证据只证明了帧循环/物理/碰撞/
+   计分/结算这条链路没崩，不覆盖指针路径——`live` 档的自动扇翅是
+   `HomePage.kt` 的 `LaunchedEffect` 直接调用 `engine.flap()`，从未经过
+   `detectTapGestures`，所以它不能证明一次真实的点击/射线能穿过新增的三层
+   `offset(z)` 全窗口碰撞体、落到父 `Box` 的 tap handler 上。这正是四层拆分改动
+   在命中测试拓扑上引入的风险点，之前的说法把这条证据用错了地方。
+   task-4 补做了 `adb -s emulator-5554 shell input tap` 的直接验证：结果是**没有拿到
+   证据**——两次真实 tap（一次在 live 档 Playing/GameOver 附近，一次在 `ow_debug cold`
+   冻结的 Playing 帧上）都没有触发预埋的探测日志。进一步查 logcat 找到了根因：
+   `PvrVirtualInput` 服务反复报 `couldn't open uinput (r=-1 errno=13)` /
+   `virtual touchpad service not added: -129`，SELinux 拒绝了它对 `uinput` 设备的
+   `write`——也就是说这台模拟器上，adb 注入的触摸事件根本到不了空间输入管线，
+   不是坐标猜错了。这条指针穿透证据目前只能标记为**未验证**，需要真机或者
+   androidTest 探针（参考项目记忆 `androidtest-probe-for-untappable-ui`）来补。**
    `verify-ui.sh` 自带的 `live` 步骤在门禁窗口内完整跑通一次真实开局：
    `rdepth1-live-playing.png` 拍到自动扇翅后小鸟离地起飞（体温 98°，说明帧循环已在推进）；
    `rdepth1-live-over.png` 拍到 9s 后已经撞枝结算（穿过枝干 1、坚持 5.8s），证明输入→物理→
@@ -375,7 +395,8 @@ media.audio_flinger: 8 Tracks of which 2 are active
 ### 深度效果本轮未验证
 
 **深度效果（小鸟/枝干/近雪的前后关系）本轮未验证——单目截图判不出深度，待用户真机主观验收。**
-四层 z 常量（`Z_PLAY=14dp` `Z_BIRD=20dp` `Z_NEAR=36dp` `Z_HUD=20dp` `Z_CARD=40dp`）均取自兄弟
+五个 z 常量（`Z_PLAY=14dp` `Z_BIRD=20dp` `Z_NEAR=36dp` `Z_HUD=20dp` `Z_CARD=40dp`，**更正**：
+上一版这里错写成"四层"——是五个常量，四个绘制层加一个 HUD 挂点）均取自兄弟
 项目的经验值，本项目没有实测数据。真机验收后如需调参，只改 `SpatialDepth.kt` 里的五个常量。
 
 ### 单元测试

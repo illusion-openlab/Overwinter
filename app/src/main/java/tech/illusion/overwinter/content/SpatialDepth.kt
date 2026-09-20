@@ -25,11 +25,17 @@ val Z_PLAY: Dp = 14.dp
 /** L2 小鸟层。只比 Z_PLAY 前 6dp——碰撞在 2D 平面算，浮太前撞枝会看起来像撞了空气。 */
 val Z_BIRD: Dp = 20.dp
 
-/** L3 近景层：近雪、颗粒、结算压暗。最靠近玩家。 */
+/** L3 近景层：近雪、结算压暗。最靠近玩家。胶片颗粒挪去了 L0（见 GameArt.kt drawFar 的
+ *  BlendMode.Overlay 图层陷阱注释），不再是这一层的内容。 */
 val Z_NEAR: Dp = 36.dp
 
-/** HUD 胶囊。与小鸟同档，好让近雪从它前面飘过。 */
-val Z_HUD: Dp = 20.dp
+/** HUD 胶囊。刻意从 Z_BIRD 派生（而不是写成独立字面量 20.dp）——小鸟顶到天花板时
+ *  （birdY 下限 24f，机身约 90dp 高）够得到 HUD 高度（温度胶囊约在 y 22..70），
+ *  两个兄弟 Canvas 层若取到完全相同的 z 值，绘制顺序未定义，谁盖谁没有保证。
+ *  HUD 胶囊还用了 backgroundMaterial，这个合成器层本来就不认兄弟节点绘制顺序
+ *  （见项目记忆 backgroundmaterial-is-compositor-layer），所以更不能靠"刚好同值"侥幸。
+ *  真机调参改 Z_BIRD 时这一项跟着走，不会再意外撞成同一个数。仍然是"紧贴在小鸟前面"。 */
+val Z_HUD: Dp = Z_BIRD + 2.dp
 
 /** 开始卡 / 结算卡。压在最前——模态 UI 的可读性优先于"雪飘在前面"，不能让雪片糊住按钮。 */
 val Z_CARD: Dp = 40.dp
